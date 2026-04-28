@@ -86,27 +86,24 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
         db.refresh(deposit)
         logging.info(f"[Deposit] Created deposit order: {deposit.id}")
         # Notify admin
+        # Notify ALL admins
         admin_ids = getattr(settings, "ADMIN_IDS", [])
-        admin_chat_id = admin_ids[0] if admin_ids else None
-        admin_notify_success = False
-        if admin_chat_id:
-            bot_token = getattr(settings, "BOT_TOKEN", None)
-            text = (
-                f"طلب شحن جديد من المستخدم: {user.first_name or ''} {user.last_name or ''} (@{user.username or ''})\n"
-                f"المبلغ: {deposit.amount} ل.س\nرقم الطلب: {deposit.id}\nانتظر موافقة الإدارة."
-            )
-            url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
-            payload = {"chat_id": admin_chat_id, "caption": text, "photo": context.user_data["screenshot_file_id"]}
-            import requests
+        photo_file_id = context.user_data["screenshot_file_id"]
+        caption = (
+            f"طلب شحن جديد من المستخدم: {user.first_name or ''} {user.last_name or ''} (@{user.username or ''})\n"
+            f"المبلغ: {deposit.amount} ل.س\nرقم الطلب: {deposit.id}\nانتظر موافقة الإدارة."
+        )
+        for admin_id in admin_ids:
             try:
-                resp = requests.post(url, data=payload, timeout=5)
-                if resp.status_code == 200:
-                    admin_notify_success = True
-                    logging.info(f"[Deposit] Admin notified successfully.")
-                else:
-                    logging.error(f"[Deposit] Admin notify failed: {resp.status_code} {resp.text}")
+                await context.bot.send_photo(
+                    chat_id=admin_id,
+                    photo=photo_file_id,
+                    caption=caption
+                )
+                logging.info(f"[Deposit] Admin {admin_id} notified successfully.")
             except Exception as e:
-                logging.error(f"[Deposit] Failed to notify admin: {e}")
+                logging.error(f"[Deposit] Failed to notify admin {admin_id}: {e}")
+
         await query.edit_message_text("✅ تم إرسال طلب الشحن بنجاح! سيتم مراجعة الطلب من قبل الإدارة.")
         logging.info("[Deposit] Confirmation message sent to user.")
     except Exception as e:

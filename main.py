@@ -156,7 +156,7 @@ def main() -> None:
     from bot.conversations.order import order_conversation_handler
     from bot.conversations.deposit import deposit_conversation_handler
     from bot.conversations.admin import admin_conversation_handler
-
+    from bot.handlers.user import show_profile
     # 4. إضافة الهاندلرز بالترتيب
     application.add_handler(start_handler)
     application.add_handler(order_conversation_handler())
@@ -164,6 +164,7 @@ def main() -> None:
     application.add_handler(admin_conversation_handler())
     application.add_handler(callback_handler)
     application.add_handler(reply_keyboard_message_handler)
+    application.add_handler(CommandHandler("profile", show_profile))
 
     # 5. أوامر المشرف للتحكم بالبوت
     admin_filter = filters.User(user_id=settings.ADMIN_IDS)
