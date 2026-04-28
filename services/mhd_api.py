@@ -24,7 +24,7 @@ class MHDStoreAPI:
         if not endpoint.startswith("/"):
             endpoint = "/" + endpoint
         url = f"{self.base_url}{endpoint}"
-
+        print(f"DEBUG REQUEST: URL={url}, params={params}, headers={self.headers}")
         try:
             if method.upper() == "GET":
                 response = requests.get(url, headers=self.headers, params=params, timeout=15)
