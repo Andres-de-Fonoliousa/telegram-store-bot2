@@ -8,7 +8,7 @@ from telegram.ext import (
 from core.database import SessionLocal
 from core.models import User, DepositOrder
 from config import settings
-from bot.handlers.navigation import exit_to_main_menu, exit_to_profile, exit_to_categories
+from bot.handlers.navigation import exit_to_main_menu, exit_to_profile, exit_to_categories, exit_to_deposit
 
 ASK_AMOUNT, ASK_SCREENSHOT, CONFIRM_DEPOSIT = range(3)
 
@@ -144,6 +144,6 @@ def deposit_conversation_handler():
             CommandHandler("cancel", cancel_deposit),
             CommandHandler("start", exit_to_main_menu),
             CommandHandler("profile", exit_to_profile),
-            CommandHandler("charge", cancel_deposit),  # يعيد تشغيل الشحن إن أُرسل
+            CommandHandler("charge", exit_to_deposit),  # يعيد تشغيل الشحن إن أُرسل
         ],
     )
