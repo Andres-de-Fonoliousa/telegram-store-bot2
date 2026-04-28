@@ -932,7 +932,7 @@ async def exit_to_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     from bot.handlers.user import show_profile
     await show_profile(update, context)
     return ConversationHandler.END
-from deposit import start_deposit
+from bot.conversations.deposit import start_deposit
 async def exit_to_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
     await update.message.reply_text("💰 جاري الانتقال إلى الشحن...")

@@ -136,7 +136,7 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def cancel_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ تم إلغاء عملية الشحن.")
     return ConversationHandler.END
-from order import exit_to_categories
+from bot.conversations.order import exit_to_categories
 def deposit_conversation_handler():
     return ConversationHandler(
         entry_points=[CommandHandler("charge", start_deposit)],
