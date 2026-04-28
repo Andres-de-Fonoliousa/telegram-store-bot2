@@ -920,33 +920,36 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 from bot.handlers.navigation import exit_to_main_menu, exit_to_profile, exit_to_categories, exit_to_deposit
+from
 def order_conversation_handler():
+    # معالجات أزرار الرد (ستُضاف إلى الحالات)
+    menu_handlers = [
+        MessageHandler(filters.Regex('^🛒 الأقسام$'), exit_to_categories),
+        MessageHandler(filters.Regex('^💰 شحن الرصيد$'), exit_to_deposit),
+        MessageHandler(filters.Regex('^👤 حسابي$'), exit_to_profile),
+    ]
+
     return ConversationHandler(
         entry_points=[CallbackQueryHandler(start_order, pattern="^product_")],
         states={
-            SELECTING_FIELD: [
+            SELECTING_FIELD: menu_handlers + [
                 CallbackQueryHandler(receive_answer, pattern="^(answer_|cancel_order|answer_back)"),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, receive_answer),
                 MessageHandler(filters.PHOTO, receive_answer),
                 MessageHandler(~filters.COMMAND, invalid_input),
             ],
-            CONFIRM_ORDER: [
+            CONFIRM_ORDER: menu_handlers + [
                 CallbackQueryHandler(confirm_order, pattern="^(confirm_order|edit_order|cancel_order|recharge_balance)$"),
             ],
         },
         fallbacks=[
             CommandHandler("cancel", cancel),
-            MessageHandler(filters.Regex('^🛒 الأقسام$'), exit_to_categories),
-            CommandHandler("cancel", cancel),
             CommandHandler("start", exit_to_main_menu),
             CommandHandler("profile", exit_to_profile),
             CommandHandler("charge", exit_to_deposit),
-            MessageHandler(filters.Regex('^🛒 الأقسام$'), exit_to_categories),  # لديك أساساً exit_to_categories
-            MessageHandler(filters.Regex('^💰 شحن الرصيد$'), exit_to_deposit),
-            MessageHandler(filters.Regex('^👤 حسابي$'), exit_to_profile),
+            # MessageHandler الخاصة بالردود تم نقلها إلى states أعلاه، لا داعي لتكرارها هنا
         ],
     )
-
 
 # -------------------- استرداد مهام الاستطلاع --------------------
 async def recover_polling_jobs(application):
