@@ -919,6 +919,25 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ تم إلغاء العملية. نأمل خدمتك في وقت لاحق.")
     return ConversationHandler.END
 
+async def exit_to_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data.clear()
+    await update.message.reply_text("🔙 تم العودة للقائمة الرئيسية.")
+    from bot.handlers.user import show_main_menu
+    await show_main_menu(update, context)
+    return ConversationHandler.END
+
+async def exit_to_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data.clear()
+    await update.message.reply_text("🔙 جاري عرض الملف الشخصي...")
+    from bot.handlers.user import show_profile
+    await show_profile(update, context)
+    return ConversationHandler.END
+from deposit import start_deposit
+async def exit_to_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data.clear()
+    await update.message.reply_text("💰 جاري الانتقال إلى الشحن...")
+    # استدعاء أمر /charge مباشرة (كما يفعل زر شحن الرصيد)
+    return await start_deposit(update, context)
 
 def order_conversation_handler():
     return ConversationHandler(
@@ -937,6 +956,13 @@ def order_conversation_handler():
         fallbacks=[
             CommandHandler("cancel", cancel),
             MessageHandler(filters.Regex('^🛒 الأقسام$'), exit_to_categories),
+            CommandHandler("cancel", cancel),
+            CommandHandler("start", exit_to_main_menu),
+            CommandHandler("profile", exit_to_profile),
+            CommandHandler("charge", exit_to_deposit),
+            MessageHandler(filters.Regex('^🛒 الأقسام$'), exit_to_categories),  # لديك أساساً exit_to_categories
+            MessageHandler(filters.Regex('^💰 شحن الرصيد$'), exit_to_deposit),
+            MessageHandler(filters.Regex('^👤 حسابي$'), exit_to_profile),
         ],
     )
 

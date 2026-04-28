@@ -11,6 +11,26 @@ from config import settings
 
 ASK_AMOUNT, ASK_SCREENSHOT, CONFIRM_DEPOSIT = range(3)
 
+async def exit_to_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data.clear()
+    await update.message.reply_text("🔙 تم العودة للقائمة الرئيسية.")
+    from bot.handlers.user import show_main_menu
+    await show_main_menu(update, context)
+    return ConversationHandler.END
+
+async def exit_to_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data.clear()
+    await update.message.reply_text("🔙 جاري عرض الملف الشخصي...")
+    from bot.handlers.user import show_profile
+    await show_profile(update, context)
+    return ConversationHandler.END
+
+async def exit_to_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data.clear()
+    await update.message.reply_text("💰 جاري الانتقال إلى الشحن...")
+    # استدعاء أمر /charge مباشرة (كما يفعل زر شحن الرصيد)
+    return await start_deposit(update, context)
+
 async def start_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("💸 كم المبلغ الذي تريد شحنه (بالليرة السورية)؟")
     context.user_data.clear()
@@ -116,7 +136,7 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def cancel_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ تم إلغاء عملية الشحن.")
     return ConversationHandler.END
-
+from order import exit_to_categories
 def deposit_conversation_handler():
     return ConversationHandler(
         entry_points=[CommandHandler("charge", start_deposit)],
@@ -125,5 +145,13 @@ def deposit_conversation_handler():
             ASK_SCREENSHOT: [MessageHandler(filters.PHOTO, confirm_deposit)],
             CONFIRM_DEPOSIT: [CallbackQueryHandler(handle_confirmation, pattern="^(confirm_deposit|cancel_deposit)$")],
         },
-        fallbacks=[CommandHandler("cancel", cancel_deposit)],
+        fallbacks=[
+            CommandHandler("cancel", cancel_deposit),
+            CommandHandler("cancel", cancel_deposit),
+            CommandHandler("start", exit_to_main_menu),
+            CommandHandler("profile", exit_to_profile),
+            MessageHandler(filters.Regex('^🛒 الأقسام$'), exit_to_categories),
+            MessageHandler(filters.Regex('^💰 شحن الرصيد$'), cancel_deposit),  # زر الشحن أثناء الشحن يلغي
+            MessageHandler(filters.Regex('^👤 حسابي$'), exit_to_profile),
+                   ],
     )
