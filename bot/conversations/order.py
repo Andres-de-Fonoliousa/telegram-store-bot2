@@ -919,26 +919,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ تم إلغاء العملية. نأمل خدمتك في وقت لاحق.")
     return ConversationHandler.END
 
-async def exit_to_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data.clear()
-    await update.message.reply_text("🔙 تم العودة للقائمة الرئيسية.")
-    from bot.handlers.user import show_main_menu
-    await show_main_menu(update, context)
-    return ConversationHandler.END
-
-async def exit_to_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data.clear()
-    await update.message.reply_text("🔙 جاري عرض الملف الشخصي...")
-    from bot.handlers.user import show_profile
-    await show_profile(update, context)
-    return ConversationHandler.END
-from bot.conversations.deposit import start_deposit
-async def exit_to_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data.clear()
-    await update.message.reply_text("💰 جاري الانتقال إلى الشحن...")
-    # استدعاء أمر /charge مباشرة (كما يفعل زر شحن الرصيد)
-    return await start_deposit(update, context)
-
+from bot.handlers.navigation import exit_to_main_menu, exit_to_profile, exit_to_categories, exit_to_deposit
 def order_conversation_handler():
     return ConversationHandler(
         entry_points=[CallbackQueryHandler(start_order, pattern="^product_")],

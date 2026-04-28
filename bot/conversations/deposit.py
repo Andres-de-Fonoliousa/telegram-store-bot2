@@ -8,28 +8,12 @@ from telegram.ext import (
 from core.database import SessionLocal
 from core.models import User, DepositOrder
 from config import settings
+from bot.handlers.navigation import exit_to_main_menu, exit_to_profile, exit_to_categories
 
 ASK_AMOUNT, ASK_SCREENSHOT, CONFIRM_DEPOSIT = range(3)
 
-async def exit_to_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data.clear()
-    await update.message.reply_text("🔙 تم العودة للقائمة الرئيسية.")
-    from bot.handlers.user import show_main_menu
-    await show_main_menu(update, context)
-    return ConversationHandler.END
-
-async def exit_to_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data.clear()
-    await update.message.reply_text("🔙 جاري عرض الملف الشخصي...")
-    from bot.handlers.user import show_profile
-    await show_profile(update, context)
-    return ConversationHandler.END
-
-async def exit_to_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data.clear()
-    await update.message.reply_text("💰 جاري الانتقال إلى الشحن...")
-    # استدعاء أمر /charge مباشرة (كما يفعل زر شحن الرصيد)
-    return await start_deposit(update, context)
+# دوال الخروج أثناء المحادثة (نفس المستوردة)
+# exit_to_main_menu, exit_to_profile, exit_to_categories معرفة في navigation.py
 
 async def start_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("💸 كم المبلغ الذي تريد شحنه (بالليرة السورية)؟")
@@ -105,7 +89,6 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
         db.commit()
         db.refresh(deposit)
         logging.info(f"[Deposit] Created deposit order: {deposit.id}")
-        # Notify admin
         # Notify ALL admins
         admin_ids = getattr(settings, "ADMIN_IDS", [])
         photo_file_id = context.user_data["screenshot_file_id"]
@@ -136,22 +119,31 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def cancel_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ تم إلغاء عملية الشحن.")
     return ConversationHandler.END
-from bot.conversations.order import exit_to_categories
+
 def deposit_conversation_handler():
+    # معالجات مشتركة للأزرار النصية (تُستخدم في كل state)
+    menu_handlers = [
+        MessageHandler(filters.Regex('^🛒 الأقسام$'), exit_to_categories),
+        MessageHandler(filters.Regex('^💰 شحن الرصيد$'), cancel_deposit),
+        MessageHandler(filters.Regex('^👤 حسابي$'), exit_to_profile),
+    ]
     return ConversationHandler(
         entry_points=[CommandHandler("charge", start_deposit)],
         states={
-            ASK_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_screenshot)],
-            ASK_SCREENSHOT: [MessageHandler(filters.PHOTO, confirm_deposit)],
-            CONFIRM_DEPOSIT: [CallbackQueryHandler(handle_confirmation, pattern="^(confirm_deposit|cancel_deposit)$")],
+            ASK_AMOUNT: menu_handlers + [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, ask_screenshot),
+            ],
+            ASK_SCREENSHOT: menu_handlers + [
+                MessageHandler(filters.PHOTO, confirm_deposit),
+            ],
+            CONFIRM_DEPOSIT: [
+                CallbackQueryHandler(handle_confirmation, pattern="^(confirm_deposit|cancel_deposit)$"),
+            ],
         },
         fallbacks=[
             CommandHandler("cancel", cancel_deposit),
-            CommandHandler("cancel", cancel_deposit),
             CommandHandler("start", exit_to_main_menu),
             CommandHandler("profile", exit_to_profile),
-            MessageHandler(filters.Regex('^🛒 الأقسام$'), exit_to_categories),
-            MessageHandler(filters.Regex('^💰 شحن الرصيد$'), cancel_deposit),  # زر الشحن أثناء الشحن يلغي
-            MessageHandler(filters.Regex('^👤 حسابي$'), exit_to_profile),
-                   ],
+            CommandHandler("charge", cancel_deposit),  # يعيد تشغيل الشحن إن أُرسل
+        ],
     )
