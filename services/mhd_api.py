@@ -40,7 +40,7 @@ class MHDStoreAPI:
 
             # التحقق من حالة الـ API (قد تكون "OK" أو True للنجاح، وأي شيء آخر خطأ)
             status = result.get("status")
-            if status not in (True, "OK", "true", "accept"):  # أضفنا "accept" كحالة نجاح محتملة
+            if status not in (True, "OK", "true", "accept"):
                 error_msg = result.get("message", "Unknown API error")
                 logger.error(f"MHD API error: {error_msg}")
                 raise MHDAPIError(f"API error: {error_msg}")
@@ -53,13 +53,6 @@ class MHDStoreAPI:
         except ValueError as e:
             logger.error(f"Invalid JSON response: {e}")
             raise MHDAPIError(f"Invalid response format: {e}") from e
-        except requests.exceptions.RequestException as e:
-            logger.error(f"MHD API request failed: {e}")
-            raise MHDAPIError(f"Network error: {e}") from e
-        except ValueError as e:
-            logger.error(f"Invalid JSON response: {e}")
-            raise MHDAPIError(f"Invalid response format: {e}") from e
-
     def get_balance_usd(self) -> Optional[float]:
         """جلب رصيد المحفظة بالدولار."""
         try:
