@@ -124,7 +124,7 @@ def deposit_conversation_handler():
     # معالجات مشتركة للأزرار النصية (تُستخدم في كل state)
     menu_handlers = [
         MessageHandler(filters.Regex('^🛒 الأقسام$'), exit_to_categories),
-        MessageHandler(filters.Regex('^💰 شحن الرصيد$'), cancel_deposit),
+        MessageHandler(filters.Regex('^💰 شحن الرصيد$'), exit_to_deposit),
         MessageHandler(filters.Regex('^👤 حسابي$'), exit_to_profile),
     ]
     return ConversationHandler(
