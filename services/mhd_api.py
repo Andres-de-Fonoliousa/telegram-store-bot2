@@ -31,20 +31,28 @@ class MHDStoreAPI:
             else:
                 raise ValueError(f"Unsupported HTTP method: {method}")
 
-            response.raise_for_status()
+            # إذا كان الكود ليس 2xx، ارمِ خطأ مع تفاصيل
+            if not response.ok:
+                logger.error(f"MHD API HTTP error: {response.status_code} for {url} - {response.text[:200]}")
+                raise MHDAPIError(f"HTTP error {response.status_code}: {response.text[:100]}")
+
             result = response.json()
 
-            # التحقق من نجاح العملية (status == "OK")
+            # التحقق من حالة الـ API (قد تكون "OK" أو True للنجاح، وأي شيء آخر خطأ)
             status = result.get("status")
-            if status != True and status != "OK":
+            if status not in (True, "OK", "true", "accept"):  # أضفنا "accept" كحالة نجاح محتملة
                 error_msg = result.get("message", "Unknown API error")
-                raise MHDAPIError(f"API returned error: {error_msg}")
-            if isinstance(result, dict) and result.get("status") != "OK":
-                error_msg = result.get("message", "Unknown API error")
-                raise MHDAPIError(f"API returned error: {error_msg}")
+                logger.error(f"MHD API error: {error_msg}")
+                raise MHDAPIError(f"API error: {error_msg}")
 
             return result
 
+        except requests.exceptions.RequestException as e:
+            logger.error(f"MHD API request failed: {e}")
+            raise MHDAPIError(f"Network error: {e}") from e
+        except ValueError as e:
+            logger.error(f"Invalid JSON response: {e}")
+            raise MHDAPIError(f"Invalid response format: {e}") from e
         except requests.exceptions.RequestException as e:
             logger.error(f"MHD API request failed: {e}")
             raise MHDAPIError(f"Network error: {e}") from e
