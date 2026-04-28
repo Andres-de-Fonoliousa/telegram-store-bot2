@@ -1,0 +1,25 @@
+# requirements.txt
+
+# Telegram Framework (Async version)
+python-telegram-bot[job-queue]==21.3
+
+# Database ORM (Allows you to switch from SQLite local to Postgres VPS without code changes)
+SQLAlchemy==2.0.30
+
+# Postgres Driver (Use 'psycopg2' if you have build tools, else 'psycopg2-binary' works fine)
+psycopg2-binary==2.9.9
+
+# Environment Variables (Keep your Bot Token secret)
+python-dotenv==1.0.1
+
+# Web Admin Panel (Lightweight Flask)
+Flask==3.0.3
+
+# Image handling (Resizing screenshots before saving to save disk space)
+Pillow==10.3.0
+
+# Arabic Date formatting helper (Optional but nice)
+arabic-reshaper==3.0.0
+python-bidi==0.4.2
+
+requests

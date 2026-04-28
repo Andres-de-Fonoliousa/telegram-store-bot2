@@ -1,0 +1,441 @@
+{
+    "categories": [
+        {"id": 1, "name_ar": "ألعاب", "name_en": "games"},
+        {"id": 2, "name_ar": "تطبيقات", "name_en": "apps"},
+        {"id": 3, "name_ar": "تواصل اجتماعي", "name_en": "social media"}
+    ],
+    "products": [
+        {
+            "id": 1,
+            "name_ar": "ببجي - شحن UC",
+            "description_ar": "شحن عملات UC للعبة ببجي موبايل",
+            "category_id": 1,
+            "base_price_syp": 0,
+            "fields": ["player_id", "uc_amount"],
+            "validation": {
+                "uc_amount": {
+                    "type": "choice",
+                    "options": [60, 325, 660, 1800, 3850, 8100]
+                },
+                "player_id":{
+                    "type": "integer"
+                }
+            },
+            "image": "pubg.jpg"
+        },
+        {
+            "id": 2,
+            "name_ar": "فري فاير - شحن دايموندز",
+            "description_ar": "شحن جواهر فري فاير",
+            "category_id": 1,
+            "base_price_syp": 0,
+            "fields": ["player_id", "diamond_amount"],
+            "validation": {
+                "diamond_amount": {
+                    "type": "choice",
+                    "options": [100, 210, 530, 1080, 2200]
+                },
+                "player_id":{
+                    "type": "integer"
+                }
+            },
+            "image": "freefire.jpg"
+        },
+        {
+            "id": 3,
+            "name_ar": "لوردز موبايل",
+            "description_ar": "شحن لوردز موبايل - أدخل Zone ID",
+            "category_id": 1,
+            "base_price_syp": 0,
+            "fields": ["zone_id", "player_id"],
+            "validation": {
+                "diamond_amount": {
+                    "type": "choice",
+                    "options": [195, 395, 785, 1179, 1964, 3928,7857,11785,19642,"اسبوعي","شهري"]
+                },
+                "zone_id":{
+                    "type": "integer"
+                },
+                "player_id":{
+                    "type": "integer"
+                },
+                "options": []
+            },
+            "image": "lords.jpg"
+        },
+        {
+            "id": 4,
+            "name_ar": "بلود سترايك - دايموندز",
+            "description_ar": "شحن عملات بلود سترايك",
+            "category_id": 1,
+            "base_price_syp": 0,
+            "fields": ["player_id", "amount"],
+            "validation": {
+                "amount": {
+                    "type": "choice",
+                    "options": [80, 160, 400, 800, 1600]
+                },
+                "player_id":{
+                    "type": "integer"
+                }
+            },
+            "image": "bloodstrike.jpg"
+        },
+        {
+            "id": 5,
+            "name_ar": "عضويات فري فاير",
+            "description_ar": "عضويات فري فاير شهرية وأسبوعية",
+            "category_id": 1,
+            "base_price_syp": 0,
+            "fields": ["membership_type", "player_id"],
+            "validation": {
+                "membership_type": {
+                    "type": "choice",
+                    "options": ["أسبوعي", "شهري"]
+                },
+                "player_id":{
+                    "type": "integer"
+                }
+            },
+            "image": "membership.jpg"
+        },
+        {
+            "id": 6,
+            "name_ar": "عضويات ببجي",
+            "description_ar": "عضويات ببجي ",
+            "category_id": 1,
+            "base_price_syp": 0,
+            "fields": ["membership_type", "player_id"],
+            "validation": {
+                "membership_type": {
+                    "type": "choice",
+                    "options": ["حزمة الشعار الاسطوري الاسبوعي بلورة حمراء","حزمة الصفقات الأسبوعية 2",
+                        "حزمة الصفقات الأسبوعية 1",
+                        "بطاقة النخبة بلس lv1-100",
+                        "بطاقة النخبة lv1-100",
+                        "بطاقة النخبة lv1-50",
+                        "Prime Plus من الشهور 12",
+                        "Prime Plus من الشهور 6",
+                        "Prime Plus من الشهور 3",
+                        "Prime Plus من الشهور 1",
+                        "Prime من الشهور 12",
+                        "Prime من الشهور 6",
+                        "Prime من الشهور 3",
+                        "Prime من الشهور 1",
+                        "حزمة الشعار الخرافي",
+                        "حزمة ترقية للأسلحة النارية",
+                        "حزمة الشراء الأول"
+                ]},
+                "player_id":{
+                    "type": "integer"
+                }
+            },
+            "image": "pubg_membership.jpg"
+        },
+        {
+            "id": 7,
+            "name_ar": "متابعين انستا - بدون ضمان",
+            "description_ar": "زيادة متابعين انستغرام (بدون تعويض)",
+            "category_id": 3,
+            "base_price_syp": 9,
+            "fields": ["quantity", "profile_url"],
+            "validation": {
+                "quantity": {
+                    "type": "multiple_of",
+                    "value": 100,
+                    "min": 100
+                }
+            },
+            "image": "followers_no_insurance.jpg"
+        },
+        {
+            "id": 8,
+            "name_ar": "متابعين انستا - مع ضمان (سيرفر العروض)",
+            "description_ar": "زيادة متابعين انستغرام مع ضمان وتعويض (سيرفر العروض)",
+            "category_id": 3,
+            "base_price_syp": 15,
+            "fields": ["quantity", "profile_url", "before_screenshot"],
+            "validation": {
+                "quantity": {
+                    "type": "multiple_of",
+                    "value": 100,
+                    "min": 100
+                }
+            },
+            "image": "followers_insurance.jpg"
+        },
+        {
+            "id": 12,
+            "name_ar": "متابعين انستا - سيرفر فوري",
+            "description_ar": "زيادة متابعين انستغرام (سيرفر فوري)",
+            "category_id": 3,
+            "base_price_syp": 22,
+            "fields": ["quantity", "profile_url"],
+            "validation": {
+                "quantity": {
+                    "type": "multiple_of",
+                    "value": 100,
+                    "min": 100
+                }
+            },
+            "image": "followers_instant.jpg"
+        },
+        {
+            "id": 9,
+            "name_ar": "لايكات انستا",
+            "description_ar": "زيادة لايكات على منشور انستغرام",
+            "category_id": 3,
+            "base_price_syp": 9,
+            "fields": ["quantity", "post_url"],
+            "validation": {
+                "quantity": {
+                    "type": "multiple_of",
+                    "value": 100,
+                    "min": 100
+                }
+            },
+            "image": "reactions.jpg"
+        },
+        {
+            "id": 10,
+            "name_ar": "ريبوست انستا",
+            "description_ar": "إعادة نشر لمنشور انستغرام",
+            "category_id": 3,
+            "base_price_syp": 27,
+            "fields": ["quantity", "post_url"],
+            "validation": {
+                "quantity": {
+                    "type": "multiple_of",
+                    "value": 100,
+                    "min": 100
+                }
+            },
+            "image": "reposts.jpg"
+        },
+        {
+            "id": 11,
+            "name_ar": "مشاهدات انستا (ريلز/صور)",
+            "description_ar": "زيادة مشاهدات فيديو أو صورة انستغرام",
+            "category_id": 3,
+            "base_price_syp": 0.14,
+            "fields": ["quantity", "post_url"],
+            "validation": {
+                "quantity": {
+                    "type": "multiple_of",
+                    "value": 100,
+                    "min": 100
+                }
+            },
+            "image": "views.jpg"
+        },
+        {
+            "id": 17,
+            "name_ar": "مشاهدات ستوري انستا",
+            "description_ar": "زيادة مشاهدات الستوري انستغرام",
+            "category_id": 3,
+            "base_price_syp": 0.14,
+            "fields": ["quantity", "story_url"],
+            "validation": {
+                "quantity": {
+                    "type": "multiple_of",
+                    "value": 100,
+                    "min": 100
+                }
+            },
+            "image": "story_views.jpg"
+        },
+        {
+            "id": 22,
+            "name_ar": "حفظ منشور انستا",
+            "description_ar": "زيادة عدد حفظ المنشور في انستغرام",
+            "category_id": 3,
+            "base_price_syp": 26,
+            "fields": ["quantity", "post_url"],
+            "validation": {
+                "quantity": {
+                    "type": "multiple_of",
+                    "value": 100,
+                    "min": 100
+                }
+            },
+            "image": "saves.jpg"
+        },
+        {
+            "id": 14,
+            "name_ar": "تعليقات انستا مكتوبة",
+            "description_ar": "تعليقات مخصصة حسب الطلب (تكتب بإيدك)",
+            "category_id": 3,
+            "base_price_syp": 25,
+            "fields": ["quantity", "post_url", "comment_text"],
+            "validation": {
+                "quantity": {
+                    "type": "min",
+                    "value": 10
+                }
+            },
+            "image": "comments.jpg"
+        },
+        {
+            "id": 23,
+            "name_ar": "متابعين فيسبوك",
+            "description_ar": "زيادة متابعين صفحة فيسبوك",
+            "category_id": 3,
+            "base_price_syp": 16,
+            "fields": ["quantity", "profile_url"],
+            "validation": {
+                "quantity": {
+                    "type": "multiple_of",
+                    "value": 100,
+                    "min": 100
+                }
+            },
+            "image": "facebook_followers.jpg"
+        },
+        {
+            "id": 24,
+            "name_ar": "تفاعلات فيسبوك",
+            "description_ar": "زيادة تفاعلات على منشور فيسبوك",
+            "category_id": 3,
+            "base_price_syp": 6,
+            "fields": ["quantity", "post_url"],
+            "validation": {
+                "quantity": {
+                    "type": "multiple_of",
+                    "value": 100,
+                    "min": 100
+                }
+            },
+            "image": "facebook_reactions.jpg"
+        },
+        {
+            "id": 25,
+            "name_ar": "مشاهدات فيسبوك (ستوري/ريلز)",
+            "description_ar": "زيادة مشاهدات ستوري أو ريلز فيسبوك",
+            "category_id": 3,
+            "base_price_syp": 5,
+            "fields": ["quantity", "post_url"],
+            "validation": {
+                "quantity": {
+                    "type": "multiple_of",
+                    "value": 100,
+                    "min": 100
+                }
+            },
+            "image": "facebook_views.jpg"
+        },
+        {
+            "id": 13,
+            "name_ar": "مشاركات منشور فيسبوك",
+            "description_ar": "زيادة مشاركات لمنشور فيسبوك",
+            "category_id": 3,
+            "base_price_syp": 9,
+            "fields": ["quantity", "post_url"],
+            "validation": {
+                "quantity": {
+                    "type": "multiple_of",
+                    "value": 100,
+                    "min": 100
+                }
+            },
+            "image": "facebook_shares.jpg"
+        },
+        {
+            "id": 15,
+            "name_ar": "توثيق حساب",
+            "description_ar": "خدمة توثيق الحسابات (علامة زرقاء)",
+            "category_id": 3,
+            "base_price_syp": 0,
+            "fields": ["account_url", "account_type"],
+            "validation": {
+                "account_type": {
+                    "type": "choice",
+                    "options": ["فيسبوك", "انستغرام"]
+                }
+            },
+            "image": "verification.jpg"
+        },
+        {
+            "id": 16,
+            "name_ar": "إعلانات ممولة",
+            "description_ar": "إعداد وإدارة حملات إعلانية",
+            "category_id": 3,
+            "base_price_syp": 0,
+            "fields": ["budget", "target_details"],
+            "validation": {},
+            "image": "ads.jpg"
+        },
+        {
+            "id": 18,
+            "name_ar": "junko",
+            "description_ar": "chat app",
+            "category_id": 2,
+            "base_price_syp": 0,
+            "fields": ["quantity", "player_id"],
+            "validation": {
+                "quantity": {
+                    "type": "multiple_of",
+                    "value": 100,
+                    "min": 50000
+                },
+                "id": {
+                    "type": "integer"
+                }
+            },
+            "image": ""
+        },{
+            "id": 19,
+            "name_ar": "Soul star",
+            "description_ar": "chat app",
+            "category_id": 2,
+            "base_price_syp": 0,
+            "fields": ["quantity", "player_id"],
+            "validation": {
+                "quantity": {
+                    "type": "multiple_of",
+                    "value": 100,
+                    "min": 10000
+                },
+                "id": {
+                    "type": "integer"
+                }
+            },
+            "image": ""
+        },{
+            "id": 20,
+            "name_ar": "Yaahlan chat",
+            "description_ar": "chat app",
+            "category_id": 2,
+            "base_price_syp": 0,
+            "fields": ["quantity", "player_id"],
+            "validation": {
+                "quantity": {
+                    "type": "multiple_of",
+                    "value": 100,
+                    "min": 5000
+                },
+                "id": {
+                    "type": "integer"
+                }
+            },
+            "image": ""
+        },{
+            "id": 21,
+            "name_ar": "Cocco",
+            "description_ar": "chat app",
+            "category_id": 2,
+            "base_price_syp": 0,
+            "fields": ["quantity", "player_id"],
+            "validation": {
+                "quantity": {
+                    "type": "multiple_of",
+                    "value": 100,
+                    "min": 10000
+                },
+                "id": {
+                    "type": "integer"
+                }
+            },
+            "image": ""
+        }
+    ]
+}

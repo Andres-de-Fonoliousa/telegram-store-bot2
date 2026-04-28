@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}لوحة الإدارة{% endblock %} - CoreX</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom RTL spacing fixes -->
+    <style>
+        [dir="rtl"] .space-x-4 > :not([hidden]) ~ :not([hidden]) {
+            --tw-space-x-reverse: 1;
+        }
+        [dir="rtl"] .space-x-reverse > :not([hidden]) ~ :not([hidden]) {
+            --tw-space-x-reverse: 0;
+        }
+        /* Smooth transitions */
+        .mobile-menu-enter {
+            max-height: 0;
+            opacity: 0;
+        }
+        .mobile-menu-enter-active {
+            max-height: 500px;
+            opacity: 1;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+        }
+        .mobile-menu-exit {
+            max-height: 500px;
+            opacity: 1;
+        }
+        .mobile-menu-exit-active {
+            max-height: 0;
+            opacity: 0;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+        }
+    </style>
+    <style>
+        /* ========== Google‑like Clean Inputs / Selects / Buttons ========== */
+        input[type="text"],
+        input[type="number"],
+        input[type="email"],
+        input[type="password"],
+        textarea,
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-color: #f8f9fa;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 14px;
+            color: #202124;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+            width: 100%;
+        }
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus,
+        textarea:focus,
+        select:focus {
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 2px rgba(26,115,232,0.2);
+            background-color: #fff;
+        }
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235f6368' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: left 12px center;
+            background-size: 12px;
+            padding-left: 30px;  /* for RTL the arrow is on the left */
+        }
+
+        /* Google Material Buttons (primary) */
+        button[type="submit"],
+        .btn-primary {
+            appearance: none;
+            -webkit-appearance: none;
+            border: none;
+            background-color: #1a73e8;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+        button[type="submit"]:hover,
+        .btn-primary:hover {
+            background-color: #1557b0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        }
+
+        /* Secondary Button (outlined) */
+        .btn-secondary {
+            background-color: #fff;
+            color: #1a73e8;
+            border: 1px solid #dadce0;
+            padding: 10px 16px;
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+        .btn-secondary:hover {
+            background-color: #f1f3f4;
+        }
+
+        /* Danger text button (delete) */
+        .btn-danger {
+            background: none;
+            border: none;
+            color: #d93025;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 0;
+            transition: color 0.2s;
+        }
+        .btn-danger:hover {
+            color: #a50e0e;
+        }
+
+        /* Google‑style Table */
+        .table-google {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .table-google thead th {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 12px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #5f6368;
+            text-align: right;
+        }
+        .table-google tbody td {
+            padding: 12px 20px;
+            border-bottom: 1px solid #f1f3f4;
+            font-size: 14px;
+            color: #202124;
+        }
+        .table-google tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* ========== Buff / Spacing Enhancements ========== */
+        /* Give main content more breathing room */
+        main.max-w-7xl {
+            padding-top: 2rem !important;
+            padding-bottom: 2.5rem !important;
+        }
+        /* Slightly larger header margins */
+        header .max-w-7xl {
+            margin-top: 1.5rem !important;
+            margin-bottom: 1.5rem !important;
+        }
+        /* Footer spacing */
+        footer.max-w-7xl {
+            margin-top: 2rem !important;
+            padding-top: 1.5rem !important;
+            padding-bottom: 1.5rem !important;
+        }
+
+        /* Flash messages with more padding and rounded corners */
+        main .mb-6 > .p-4 {
+            padding: 1rem 1.25rem !important;
+            border-radius: 12px !important;
+            margin-bottom: 1rem !important;
+        }
+
+        /* General card padding tweaks (if any cards need more padding) */
+        .bg-white.shadow.rounded-lg,
+        .bg-white.shadow.rounded-xl {
+            padding: 2rem !important;
+        }
+        .bg-white.shadow.rounded-lg h2,
+        .bg-white.shadow.rounded-xl h2 {
+            margin-bottom: 1.5rem !important;
+        }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-gray-100 font-sans antialiased">
+
+    <!-- Navigation Bar -->
+    <nav class="bg-gray-900 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo / Brand -->
+                <div class="flex items-center">
+                    <span class="text-xl font-semibold tracking-tight">لوحة الإدارة</span>
+                    <span class="mr-4 text-sm text-gray-400 hidden sm:block">CoreX 2026</span>
+                </div>
+
+                <!-- Desktop Navigation Links -->
+                <div class="hidden md:flex items-center space-x-4 space-x-reverse">
+                    <a href="{{ url_for('manage_prices') }}" class="px-3 py-2 rounded-md text-sm font-medium {% if active_page == 'prices' %}bg-gray-700{% else %}hover:bg-gray-700{% endif %} transition">الأسعار</a>
+                    <a href="{{ url_for('manage_orders') }}" class="px-3 py-2 rounded-md text-sm font-medium {% if active_page == 'orders' %}bg-gray-700{% else %}hover:bg-gray-700{% endif %} transition">الطلبات</a>
+                    <a href="{{ url_for('manage_deposits') }}" class="px-3 py-2 rounded-md text-sm font-medium {% if active_page == 'deposits' %}bg-gray-700{% else %}hover:bg-gray-700{% endif %} transition">الشحنات</a>
+                    <a href="{{ url_for('bot_control') }}" class="px-3 py-2 rounded-md text-sm font-medium {% if active_page == 'bot_control' %}bg-gray-700{% else %}hover:bg-gray-700{% endif %} transition">🤖 البوت</a>
+                    <a href="{{ url_for('manage_exchange_rate') }}" class="px-3 py-2 rounded-md text-sm font-medium {% if active_page == 'exchange_rate' %}bg-gray-700{% else %}hover:bg-gray-700{% endif %} transition">سعر الصرف</a>
+                    <a href="{{ url_for('logout') }}" class="px-3 py-2 rounded-md text-sm font-medium bg-red-600 hover:bg-red-700 transition">خروج</a>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden">
+                    <button id="mobile-menu-button" type="button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white" aria-controls="mobile-menu" aria-expanded="false">
+                        <span class="sr-only">فتح القائمة</span>
+                        <!-- Hamburger icon -->
+                        <svg id="menu-icon" class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                        <!-- Close icon (hidden by default) -->
+                        <svg id="close-icon" class="hidden h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu (Collapsible) -->
+        <div id="mobile-menu" class="hidden md:hidden bg-gray-800 overflow-hidden transition-all duration-300">
+            <div class="px-2 pt-2 pb-3 space-y-1">
+                <a href="{{ url_for('manage_prices') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if active_page == 'prices' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %}">الأسعار</a>
+                <a href="{{ url_for('manage_orders') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if active_page == 'orders' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %}">الطلبات</a>
+                <a href="{{ url_for('manage_deposits') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if active_page == 'deposits' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %}">الشحنات</a>
+                <a href="{{ url_for('bot_control') }}" class="px-3 py-2 rounded-md text-sm font-medium {% if active_page == 'bot_control' %}bg-gray-700{% else %}hover:bg-gray-700{% endif %} transition">🤖 البوت</a>
+                <a href="{{ url_for('manage_exchange_rate') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if active_page == 'exchange_rate' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %}">سعر الصرف</a>
+                <a href="{{ url_for('logout') }}" class="block px-3 py-2 rounded-md text-base font-medium bg-red-600 text-white hover:bg-red-700">خروج</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Heading (optional block) -->
+    {% block header %}{% endblock %}
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="mb-6">
+              {% for category, message in messages %}
+                <div class="p-4 rounded-md {% if category in ['error', 'danger'] %}bg-red-100 text-red-800 border border-red-300{% else %}bg-green-100 text-green-800 border border-green-300{% endif %}">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-7xl mx-auto px-4 py-6 text-center text-gray-500 text-sm border-t border-gray-200">
+        CoreX 2026 &copy; جميع الحقوق محفوظة
+    </footer>
+
+    <!-- Mobile Menu JavaScript -->
+    <script>
+        (function() {
+            const menuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const menuIcon = document.getElementById('menu-icon');
+            const closeIcon = document.getElementById('close-icon');
+
+            let isOpen = false;
+
+            function toggleMenu() {
+                isOpen = !isOpen;
+                if (isOpen) {
+                    mobileMenu.classList.remove('hidden');
+                    menuIcon.classList.add('hidden');
+                    closeIcon.classList.remove('hidden');
+                    menuButton.setAttribute('aria-expanded', 'true');
+                    // Smooth height animation
+                    mobileMenu.style.maxHeight = mobileMenu.scrollHeight + 'px';
+                    setTimeout(() => { mobileMenu.style.maxHeight = 'none'; }, 300);
+                } else {
+                    mobileMenu.style.maxHeight = mobileMenu.scrollHeight + 'px';
+                    setTimeout(() => {
+                        mobileMenu.style.maxHeight = '0';
+                        menuIcon.classList.remove('hidden');
+                        closeIcon.classList.add('hidden');
+                        menuButton.setAttribute('aria-expanded', 'false');
+                    }, 10);
+                    setTimeout(() => {
+                        mobileMenu.classList.add('hidden');
+                    }, 300);
+                }
+            }
+
+            menuButton.addEventListener('click', toggleMenu);
+
+            // Close menu when window is resized to desktop size
+            window.addEventListener('resize', function() {
+                if (window.innerWidth >= 768 && isOpen) {
+                    // Reset menu state without animation for desktop
+                    mobileMenu.classList.add('hidden');
+                    mobileMenu.style.maxHeight = '';
+                    menuIcon.classList.remove('hidden');
+                    closeIcon.classList.add('hidden');
+                    menuButton.setAttribute('aria-expanded', 'false');
+                    isOpen = false;
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

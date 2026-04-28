@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة أسعار المنتجات{% endblock %}
+
+{% block header %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-10">
+    <h1 class="text-3xl font-bold text-gray-900">إدارة أسعار المنتجات</h1>
+    <nav class="text-sm text-gray-500 mt-2">
+        <a href="{{ url_for('admin_dashboard') }}" class="hover:text-blue-600">الرئيسية</a> /
+        <span>الأسعار والنسب</span>
+    </nav>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    /* إلغاء تنسيقات المتصفح الافتراضية وجعل الحقول "Google-like" */
+    input[type="text"],
+    input[type="number"],
+    select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-color: #f8f9fa;
+        border: 1px solid #dadce0;
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 14px;
+        color: #202124;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        width: 100%;
+    }
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    select:focus {
+        border-color: #1a73e8;
+        box-shadow: 0 0 0 2px rgba(26,115,232,0.2);
+        background-color: #fff;
+    }
+    select {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235f6368' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: left 12px center;
+        background-size: 12px;
+        padding-right: 12px;
+        padding-left: 30px;
+    }
+    button[type="submit"],
+    .btn-like {
+        appearance: none;
+        -webkit-appearance: none;
+        border: none;
+        background-color: #1a73e8;
+        color: white;
+        padding: 10px 16px;
+        border-radius: 24px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s, box-shadow 0.2s;
+    }
+    button[type="submit"]:hover {
+        background-color: #1557b0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+    .btn-secondary {
+        background-color: #fff;
+        color: #1a73e8;
+        border: 1px solid #dadce0;
+        padding: 10px 16px;
+        border-radius: 24px;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.2s;
+    }
+    .btn-secondary:hover {
+        background-color: #f1f3f4;
+    }
+    .btn-danger {
+        background: none;
+        border: none;
+        color: #d93025;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        padding: 0;
+        transition: color 0.2s;
+    }
+    .btn-danger:hover {
+        color: #a50e0e;
+    }
+    .table-google {
+        border-collapse: separate;
+        border-spacing: 0;
+        width: 100%;
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .table-google thead th {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #e0e0e0;
+        padding: 12px 20px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #5f6368;
+        text-align: right;
+    }
+    .table-google tbody td {
+        padding: 12px 20px;
+        border-bottom: 1px solid #f1f3f4;
+        font-size: 14px;
+        color: #202124;
+    }
+    .table-google tbody tr:last-child td {
+        border-bottom: none;
+    }
+</style>
+
+<!-- Two‑column layout for markup and add/edit price -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-12">
+    <!-- Update Markup Percentage -->
+    <div class="bg-white shadow rounded-xl p-8">
+        <h2 class="text-2xl font-semibold text-gray-800 mb-6">تحديث نسبة الربح</h2>
+        <form method="post" action="{{ url_for('update_product_markup') }}" class="space-y-5">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">المنتج</label>
+                <select name="product_id" required>
+                    {% for product in products %}
+                    <option value="{{ product.id }}">
+                        {{ product.name_ar }} (حالي: {{ product.markup_percentage }}%)
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">نسبة الربح الجديدة (%)</label>
+                <input type="number" step="0.01" min="0" name="markup_percentage" required placeholder="0.00">
+            </div>
+            <button type="submit" class="w-full">تحديث النسبة</button>
+        </form>
+    </div>
+
+    <!-- Add or Edit Price for a Quantity -->
+    <div class="bg-white shadow rounded-xl p-8">
+        <h2 class="text-2xl font-semibold text-gray-800 mb-6">
+            {% if edit_price %}تعديل سعر{% else %}إضافة سعر لكمية / خيار{% endif %}
+        </h2>
+        <form method="post" action="{{ url_for('manage_prices') }}" class="space-y-5">
+            {% if edit_price %}
+                <input type="hidden" name="price_id" value="{{ edit_price.id }}">
+            {% endif %}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">المنتج</label>
+                <select name="product_id" required>
+                    {% for product in products %}
+                    <option value="{{ product.id }}" {% if edit_price and product.id == edit_price.product_id %}selected{% endif %}>
+                        {{ product.name_ar }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">الخيار / الكمية</label>
+                <input type="text" name="option_value" required placeholder="مثال: 60, 325, أسبوعي"
+                       value="{{ edit_price.option_value if edit_price else '' }}">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">السعر بالدولار</label>
+                <input type="number" step="0.01" name="price_usd" required
+                       value="{{ edit_price.price_usd if edit_price else '' }}">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">سعر الصرف (دولار إلى ليرة)</label>
+                <input type="number" step="1" name="exchange_rate" required
+                       value="{{ current_exchange_rate }}">
+            </div>
+            <div class="flex gap-4 pt-2">
+                <button type="submit" class="flex-1">
+                    {% if edit_price %}تحديث السعر{% else %}حفظ السعر{% endif %}
+                </button>
+                {% if edit_price %}
+                    <a href="{{ url_for('manage_prices') }}" class="btn-secondary flex-1 text-center">
+                        إلغاء
+                    </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Table of all prices -->
+<div class="bg-white shadow rounded-xl overflow-hidden mb-8">
+    <div class="px-8 py-5 border-b border-gray-200">
+        <h2 class="text-2xl font-semibold text-gray-800">الأسعار الحالية</h2>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="table-google">
+            <thead>
+                <tr>
+                    <th>المنتج</th>
+                    <th>الخيار/الكمية</th>
+                    <th>السعر (ل.س)</th>
+                    <th>تكلفة المزود</th>
+                    <th>نسبة الربح</th>
+                    <th>إجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for price in prices %}
+                <tr>
+                    <td>
+                        {% for product in products %}
+                            {% if product.id == price.product_id %}{{ product.name_ar }}{% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>{{ price.option_value }}</td>
+                    <td class="font-medium">{{ price.price_syp }}</td>
+                    <td>{{ price.provider_cost if price.provider_cost else '-' }}</td>
+                    <td>
+                        {% for product in products %}
+                            {% if product.id == price.product_id %}{{ product.markup_percentage }}%{% endif %}
+                        {% endfor %}
+                    </td>
+                    <td class="flex items-center gap-3">
+                        <a href="{{ url_for('manage_prices', edit=price.id) }}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">تعديل</a>
+                        <form method="post" action="{{ url_for('delete_price', price_id=price.id) }}" class="inline">
+                            <button type="submit" onclick="return confirm('هل أنت متأكد من الحذف؟');" class="btn-danger">حذف</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-gray-500 py-6">لا توجد أسعار مسجلة بعد.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

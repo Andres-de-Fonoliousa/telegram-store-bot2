@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>تسجيل الدخول - إدارة الأسعار</title>
+    <style>
+        .navbar {
+            background: #222;
+            color: #fff;
+            padding: 1em 0.5em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar .brand {
+            font-weight: bold;
+            font-size: 1.2em;
+            letter-spacing: 1px;
+        }
+        .navbar .links a {
+            color: #fff;
+            text-decoration: none;
+            margin-left: 1.5em;
+            font-size: 1em;
+            transition: color 0.2s;
+        }
+        .navbar .links a:hover {
+            color: #2d8cff;
+        }
+        body { font-family: Tahoma, Arial; background: #f7f7f7; display: flex; align-items: center; justify-content: center; height: 100vh; }
+        .login-box {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 16px #0001;
+            padding: 2em 2.5em;
+            min-width: 320px;
+            text-align: center;
+        }
+        h2 { margin-bottom: 1.5em; color: #333; }
+        input[type="text"] {
+            width: 90%;
+            padding: 0.7em;
+            margin-bottom: 1.2em;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+        button {
+            background: #2d8cff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 0.7em 2em;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background: #1766c2; }
+        .error { color: #c00; margin-bottom: 1em; }
+    </style>
+</head>
+    <body>
+    <div class="navbar">
+        <div class="brand">لوحة الإدارة</div>
+        <div class="links">
+            <a href="/admin/prices">أسعار المنتجات</a>
+            <a href="/admin/orders">الطلبات</a>
+            <a href="/admin/deposits">طلبات الشحن</a>
+        </div>
+    </div>
+    <div class="login-box">
+        <h2>تسجيل الدخول للإدارة</h2>
+        {% if error %}<div class="error">{{ error }}</div>{% endif %}
+        <form method="post">
+            {% if step == 2 %}
+                <div style="margin-bottom:1em;">تم إرسال رمز تحقق إلى حسابك في تيليجرام. يرجى إدخال الرمز:</div>
+                <input type="text" name="code" placeholder="رمز التحقق" required autofocus>
+                <button type="submit">تأكيد الرمز</button>
+            {% else %}
+                <input type="text" name="admin_id" placeholder="أدخل رقم حسابك في تيليجرام" required autofocus>
+                <button type="submit">دخول</button>
+            {% endif %}
+        </form>
+        <div class="corex" style="font-size:1.1em;color:#888;margin-top:2em;">CoreX 2026 <span title="Trademark">&copy;</span></div>
+    </div>
+</body>
+</html>

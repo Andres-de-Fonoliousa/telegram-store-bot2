@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}التحكم بالبوت{% endblock %}
+
+{% block header %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-10">
+    <h1 class="text-3xl font-bold text-gray-900">التحكم بالبوت</h1>
+    <nav class="text-sm text-gray-500 mt-2">
+        <a href="{{ url_for('admin_dashboard') }}" class="hover:text-blue-600">الرئيسية</a> /
+        <span>التحكم بالبوت</span>
+    </nav>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    /* تنسيق Google‑like لحالة البوت */
+    .status-box {
+        border-radius: 16px !important;
+        padding: 1.75rem 1.75rem !important;
+        border-width: 1px;
+    }
+    .status-box svg {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+    .status-box h3 {
+        font-size: 1.25rem;
+        margin-bottom: 0.25rem;
+    }
+    .status-box p {
+        font-size: 0.95rem;
+    }
+
+    /* أزرار البوت بتصميم Material Pill */
+    .bot-btn {
+        appearance: none;
+        -webkit-appearance: none;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 28px;
+        font-size: 15px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s, box-shadow 0.2s, opacity 0.2s;
+        outline: none;
+        width: 100%;
+    }
+    .bot-btn:focus {
+        box-shadow: 0 0 0 2px rgba(0,0,0,0.15);
+    }
+    .bot-btn-start {
+        background-color: #34a853;
+        color: white;
+    }
+    .bot-btn-start:hover:not(:disabled) {
+        background-color: #2d8e47;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+    .bot-btn-stop {
+        background-color: #ea4335;
+        color: white;
+    }
+    .bot-btn-stop:hover:not(:disabled) {
+        background-color: #d33426;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+    .bot-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+
+    /* تحسين الحاوية الخاصة بالملاحظة */
+    .note-box {
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem;
+        background-color: #f8f9fa;
+        font-size: 0.9rem;
+    }
+</style>
+
+<div class="bg-white shadow rounded-xl overflow-hidden">
+    <div class="px-8 py-5 border-b border-gray-200">
+        <h2 class="text-2xl font-semibold text-gray-800">حالة البوت والتحكم به</h2>
+    </div>
+    <div class="p-8">
+        <!-- Status Display -->
+        <div class="mb-8 status-box {% if bot_active %}bg-green-50 border-green-200{% else %}bg-red-50 border-red-200{% endif %}">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    {% if bot_active %}
+                    <svg class="text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    {% else %}
+                    <svg class="text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    {% endif %}
+                </div>
+                <div class="mr-4">
+                    <h3 class="text-lg font-medium {% if bot_active %}text-green-800{% else %}text-red-800{% endif %}">
+                        البوت حالياً: {{ "نشط ✅" if bot_active else "متوقف ⏸️" }}
+                    </h3>
+                    <p class="text-sm {% if bot_active %}text-green-600{% else %}text-red-600{% endif %} mt-1">
+                        {% if bot_active %}
+                        البوت يعمل ويستجيب لطلبات المستخدمين.
+                        {% else %}
+                        البوت متوقف ولن يستجيب لأي أوامر حتى يتم تشغيله.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4">
+            <form method="post" class="inline w-full sm:w-auto">
+                <input type="hidden" name="action" value="start">
+                <button type="submit" {% if bot_active %}disabled{% endif %}
+                        class="bot-btn bot-btn-start">
+                    ▶️ تشغيل البوت
+                </button>
+            </form>
+            <form method="post" class="inline w-full sm:w-auto">
+                <input type="hidden" name="action" value="stop">
+                <button type="submit" {% if not bot_active %}disabled{% endif %}
+                        class="bot-btn bot-btn-stop">
+                    ⏸️ إيقاف البوت
+                </button>
+            </form>
+        </div>
+
+        <div class="mt-8 note-box">
+            <p class="text-sm text-gray-600">
+                <strong>ملاحظة:</strong> إيقاف البوت يمنع المستخدمين من استخدام أي أوامر. يمكن تشغيله مرة أخرى في أي وقت من هذه اللوحة.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
