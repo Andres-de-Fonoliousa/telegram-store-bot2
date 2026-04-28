@@ -920,7 +920,6 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 from bot.handlers.navigation import exit_to_main_menu, exit_to_profile, exit_to_categories, exit_to_deposit
-from
 def order_conversation_handler():
     # معالجات أزرار الرد (ستُضاف إلى الحالات)
     menu_handlers = [
