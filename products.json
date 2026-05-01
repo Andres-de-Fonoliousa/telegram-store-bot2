@@ -47,7 +47,7 @@
             "description_ar": "شحن لوردز موبايل - أدخل Zone ID",
             "category_id": 1,
             "base_price_syp": 0,
-            "fields": ["zone_id", "player_id"],
+            "fields": ["diamond_amount","zone_id", "player_id"],
             "validation": {
                 "diamond_amount": {
                     "type": "choice",

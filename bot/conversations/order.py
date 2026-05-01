@@ -626,7 +626,7 @@ async def receive_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     field_display = {
         "player_id": "الـ ID", "uc_amount": "كمية الـ UC", "diamond_amount": "كمية الدايموندز",
-        "amount": "الكمية", "zone_id": "Zone ID", "membership_type": "نوع العضوية",
+        "amount": "الكمية", "zone_id": "Zone ID(مكون من أربع ارقام)", "membership_type": "نوع العضوية",
         "quantity": "الكمية", "profile_url": "الرابط", "before_screenshot": "لقطة الشاشة",
         "post_url": "رابط المنشور", "comment_text": "نص التعليق", "account_url": "رابط الحساب",
         "account_type": "نوع الحساب", "budget": "الميزانية", "target_details": "تفاصيل الاستهداف",
