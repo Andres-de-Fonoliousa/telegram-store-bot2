@@ -24,7 +24,7 @@ class Settings:
 
     # MHD API Settings (الجديدة)
     MHD_API_KEY = os.getenv("MHD_API_KEY")
-    MHD_API_BASE_URL = os.getenv("MHD_API_BASE_URL", "https://mhd-game.com/api/client/api")
+    MHD_API_BASE_URL = os.getenv("MHD_API_BASE_URL", "https://api.shmas4store.com/client/api")
     MHD_API_ENABLED = os.getenv("MHD_API_ENABLED", "false").lower() == "true"
 
     SYNC_ENABLED = os.getenv("SYNC_ENABLED", "true").lower() == "true"

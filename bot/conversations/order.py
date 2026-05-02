@@ -1,5 +1,6 @@
 # order.py – النسخة النهائية الكاملة مع دعم الرجوع ومعالجة أزرار القائمة
 import os
+import uuid
 import re
 import json
 import logging
@@ -49,6 +50,7 @@ def get_field_question(field_name):
         "amount": "🔢 يرجى تحديد الكمية المطلوبة:",
         "zone_id": "🌍 يرجى تزويدنا بـ Zone ID:",
         "membership_type": "📅 هل ترغب بعضوية أسبوعية أم شهرية؟",
+        "jawaker":"ما نوع الحزمة المطلوبة؟",
         "quantity": "🔢 يرجى تحديد العدد المطلوب (يجب أن يكون من مضاعفات 100):",
         "profile_url": "🔗 يرجى إرسال رابط الحساب (البروفايل):",
         "before_screenshot": "📸 يرجى إرسال لقطة شاشة للحساب *قبل* البدء (لضمان الخدمة):",
@@ -155,7 +157,7 @@ async def process_auto_purchase(order_id: int, user_id: int, bot, context: Callb
             player_id, extra_params = extract_player_and_zone(answers)
 
             api = MHDStoreAPI(settings.MHD_API_KEY, settings.MHD_API_BASE_URL)
-            idempotency_key = f"tg_order_{order_id}"
+            idempotency_key = str(uuid.uuid4())
 
             try:
                 external_uuid = api.create_order(
@@ -265,15 +267,17 @@ async def process_auto_purchase(order_id: int, user_id: int, bot, context: Callb
             )
             await notify_admins(
                 bot,
-                f"⚠️ فشل شراء آلي (رصيد MHD غير كافٍ) للطلب #{order.id}\n"
-                f"المنتج: {product.name_ar}\n"
-                f"المستخدم: @{user.username or user.first_name}\n"
-                f"التكلفة المطلوبة: ${order_cost_usd:.2f}\n"
-                f"الرصيد الحالي: ${mhd_balance:.2f}"
+                f"💰 *رصيد المورد منخفض*\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"🆔 الطلب: #{order.id}\n"
+                f"🛒 المنتج: {product.name_ar}\n"
+                f"👤 المستخدم: @{user.username or user.first_name}\n"
+                f"💲 التكلفة: ${order_cost_usd:.2f}\n"
+                f"🏦 الرصيد: ${mhd_balance:.2f}"
             )
             return
 
-        idempotency_key = f"tg_order_{order_id}"
+        idempotency_key = str(uuid.uuid4())
 
         try:
             external_uuid = api.create_order(
@@ -293,16 +297,20 @@ async def process_auto_purchase(order_id: int, user_id: int, bot, context: Callb
 
             await send_notification(
                 bot, user.telegram_id,
-                f"❌ عذراً، فشلت عملية الشراء الآلي للطلب #{order.id}.\n"
-                f"تم إرجاع {order.total_price_syp} ل.س إلى رصيدك.\n"
-                f"يرجى المحاولة لاحقاً أو التواصل مع الدعم."
+                f"🛑 *الخدمة متوقفة مؤقتاً*\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"🆔 رقم الطلب: #{order.id}\n"
+                f"🔄 تم إرجاع {order.total_price_syp} ل.س إلى رصيدك.\n\n"
+                f"👨‍💻 فريقنا يعمل على حل المشكلة، شكراً لصبرك."
             )
             await notify_admins(
                 bot,
-                f"⚠️ فشل شراء آلي للطلب #{order.id}\n"
-                f"المنتج: {product.name_ar}\n"
-                f"المستخدم: @{user.username or user.first_name}\n"
-                f"الخطأ: {e}"
+                f"🚨 *فشل شراء آلي*\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"🆔 الطلب: #{order.id}\n"
+                f"🛒 المنتج: {product.name_ar}\n"
+                f"👤 المستخدم: @{user.username or user.first_name}\n"
+                f"❗ الخطأ: {e}"
             )
             return
 
@@ -314,8 +322,10 @@ async def process_auto_purchase(order_id: int, user_id: int, bot, context: Callb
 
         await send_notification(
             bot, user.telegram_id,
-            f"🔄 تم استلام طلبك #{order.id} وجاري تنفيذه آلياً...\n"
-            f"سيتم إعلامك فور اكتماله."
+            f"⚙️ *جاري المعالجة الآلية*\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"🆔 طلبك #{order.id} قيد التنفيذ...\n"
+            f"🔔 سيصلك إشعار فور اكتماله."
         )
         await notify_admins(
             bot,
@@ -382,7 +392,7 @@ async def poll_order_status(context: CallbackContext):
         except MHDAPIError as e:
             logger.warning(f"Poll attempt {attempt} failed: {e}")
             elapsed = (datetime.utcnow() - started_at).total_seconds()
-            if elapsed < 120:
+            if elapsed < 900:
                 next_delay = min(attempt * 2, 15)
                 context.job_queue.run_once(
                     poll_order_status,
@@ -395,8 +405,11 @@ async def poll_order_status(context: CallbackContext):
                 db.commit()
                 await notify_admins(
                     context.bot,
-                    f"⏰ انتهت مهلة استطلاع الطلب #{order.id} (MHD: {order.external_order_uuid})\n"
-                    f"يحتاج تدخل يدوي."
+                    f"⏰ *انتهت مهلة الاستطلاع*\n"
+                    f"━━━━━━━━━━━━━━━━━━\n"
+                    f"🆔 الطلب: #{order.id}\n"
+                    f"🔑 MHD UUID: {order.external_order_uuid}\n"
+                    f"🛑 يتطلب تدخلاً يدوياً."
                 )
             return
 
@@ -416,11 +429,15 @@ async def poll_order_status(context: CallbackContext):
                 f"شكراً لاستخدامك خدماتنا.",
                 parse_mode="Markdown"
             )
-            await notify_admins(
-                context.bot,
-                f"✅ اكتمل الطلب الآلي #{order.id}\n"
-                f"MHD UUID: {order.external_order_uuid}\n"
-                f"البيانات: {delivered}"
+            await send_notification(
+                context.bot, user.telegram_id,
+                f"🎊 *اكتمل طلبك بنجاح*\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"🆔 رقم الطلب: #{order.id}\n"
+                f"📦 البيانات المستلمة:\n"
+                f"`{escaped_delivered}`\n\n"
+                f"🌟 شكراً لثقتك، نتمنى لك تجربة ممتعة!",
+                parse_mode="Markdown"
             )
 
         elif mhd_status in ("failed", "cancelled"):
@@ -432,9 +449,11 @@ async def poll_order_status(context: CallbackContext):
 
             await send_notification(
                 context.bot, user.telegram_id,
-                f"❌ فشل تنفيذ طلبك #{order.id}.\n"
-                f"تم إرجاع {order.total_price_syp} ل.س إلى رصيدك.\n"
-                f"يرجى المحاولة لاحقاً أو التواصل مع الدعم."
+                f"🛑 *الخدمة متوقفة مؤقتاً*\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"🆔 رقم الطلب: #{order.id}\n"
+                f"🔄 تم إرجاع {order.total_price_syp} ل.س إلى رصيدك.\n\n"
+                f"👨‍💻 فريقنا يعمل على حل المشكلة، شكراً لصبرك."
             )
             await notify_admins(
                 context.bot,
@@ -444,7 +463,7 @@ async def poll_order_status(context: CallbackContext):
 
         else:
             elapsed = (datetime.utcnow() - started_at).total_seconds()
-            if elapsed < 120:
+            if elapsed < 900:
                 next_delay = min(attempt * 2, 15)
                 context.job_queue.run_once(
                     poll_order_status,
@@ -870,11 +889,13 @@ async def confirm_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await notify_admins(
             context.bot,
-            f"📦 طلب جديد #{order.id}\n"
-            f"المستخدم: {user.first_name or ''} {user.last_name or ''} (@{user.username or ''})\n"
-            f"المنتج: {context.user_data['product_name']}\n"
-            f"السعر: {total_price} ل.س\n"
-            f"التفاصيل: {json.dumps(context.user_data['answers'], ensure_ascii=False)}"
+            f"🛎️ *تنبيه: طلب جديد*\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"🆔 رقم الطلب: #{order.id}\n"
+            f"👤 المستخدم: {user.first_name or ''} {user.last_name or ''} (@{user.username or ''})\n"
+            f"🛒 المنتج: {context.user_data['product_name']}\n"
+            f"💰 السعر: {total_price} ل.س\n"
+            f"📋 التفاصيل: {json.dumps(context.user_data['answers'], ensure_ascii=False)}"
         )
 
         # منطق الشراء الآلي
@@ -884,17 +905,23 @@ async def confirm_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 process_auto_purchase(order.id, user.id, context.bot, context)
             )
             final_text = (
-                f"✅ *تم استلام طلبك #{order.id} بنجاح!*\n\n"
-                f"المنتج: {escape_markdown(context.user_data['product_name'])}\n"
-                f"تم خصم {total_price} ل.س من رصيدك.\n"
-                f"🔄 *جاري تنفيذ الطلب آلياً...* ستتلقى إشعاراً فور اكتماله."
+                f"🤖 *طلب آلي قيد التنفيذ*\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"🆔 رقم الطلب: #{order.id}\n"
+                f"🛒 المنتج: {escape_markdown(context.user_data['product_name'])}\n"
+                f"💵 تم خصم: {total_price} ل.س\n\n"
+                f"⚡ جاري التنفيذ تلقائياً...\n"
+                f"🔔 ستتلقى إشعاراً فور اكتمال الطلب."
             )
         else:
             final_text = (
-                f"✅ *تم استلام طلبك #{order.id} بنجاح!*\n\n"
-                f"المنتج: {escape_markdown(context.user_data['product_name'])}\n"
-                f"تم خصم {total_price} ل.س من رصيدك.\n"
-                f"سيتم مراجعة الطلب والتواصل معك قريباً."
+                f"🎉 *طلبك قيد المراجعة*\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"🆔 رقم الطلب: #{order.id}\n"
+                f"🛒 المنتج: {escape_markdown(context.user_data['product_name'])}\n"
+                f"💵 تم خصم: {total_price} ل.س\n\n"
+                f"👨‍💻 سيقوم فريقنا بمراجعة طلبك والتواصل معك قريباً.\n"
+                f"📩 للاستفسار: @MyGameSupport"
             )
 
         await query.edit_message_text(final_text, parse_mode="Markdown")

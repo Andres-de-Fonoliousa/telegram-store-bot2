@@ -21,6 +21,64 @@ import re
 
 # ========== دوال العرض الأساسية (تُستدعى من main.py ومن داخل الملف) ==========
 
+from core.database import SessionLocal
+from core.models import Category, Product
+from bot.keyboards.inline import products_keyboard, back_to_main_keyboard
+
+async def show_games_category(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    db = SessionLocal()
+    try:
+        category = db.query(Category).filter_by(name_ar="ألعاب").first()
+        if not category:
+            await update.message.reply_text("⚠️ قسم الألعاب غير متوفر حاليًا.")
+            return
+        products = db.query(Product).filter_by(category_id=category.id, is_active=True).all()
+        if products:
+            header = (
+                "🎮🔥 *قسم الألعاب* 🔥🎮\n"
+                "━━━━━━━━━━━━━━━━━━\n"
+                "اختر اللعبة التي تريدها 👇"
+            )
+            await update.message.reply_text(
+                header,
+                reply_markup=products_keyboard(products),
+                parse_mode="Markdown"
+            )
+        else:
+            await update.message.reply_text(
+                "🎮 لا توجد ألعاب متاحة حاليًا.",
+                reply_markup=back_to_main_keyboard()
+            )
+    finally:
+        db.close()
+
+async def show_social_category(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    db = SessionLocal()
+    try:
+        category = db.query(Category).filter_by(name_ar="تواصل اجتماعي").first()
+        if not category:
+            await update.message.reply_text("⚠️ قسم التواصل الاجتماعي غير متوفر حاليًا.")
+            return
+        products = db.query(Product).filter_by(category_id=category.id, is_active=True).all()
+        if products:
+            header = (
+                "⚡📱 *خدمات التواصل* 📱⚡\n"
+                "━━━━━━━━━━━━━━━━━━\n"
+                "اختار الخدمة التي تريدها 👇"
+            )
+            await update.message.reply_text(
+                header,
+                reply_markup=products_keyboard(products),
+                parse_mode="Markdown"
+            )
+        else:
+            await update.message.reply_text(
+                "📱 لا توجد خدمات متاحة حاليًا.",
+                reply_markup=back_to_main_keyboard()
+            )
+    finally:
+        db.close()
+
 async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     عرض القائمة الرئيسية (الأقسام) مع مسح أي حالة مؤقتة.
@@ -86,20 +144,21 @@ async def reply_keyboard_handler(update: Update, context: ContextTypes.DEFAULT_T
     """معالج الأزرار النصية أسفل الشاشة."""
     text = update.message.text
 
-    if text == "🛒 الأقسام":
-        await show_main_menu(update, context)
+    if text == "الألعاب 🎮🔥":
+        await show_games_category(update, context)
         return
-
-    elif text == "💰 شحن الرصيد":
-        # بدء محادثة الإيداع عبر إرسال أمر /charge
+    elif text == "الرَّشق ⚡📱":
+        await show_social_category(update, context)
+        return
+    elif text == "شحن الرصيد 💎":
         await update.message._bot.send_message(
             chat_id=update.effective_chat.id,
-            text="/charge  الرجاء الضغط على أمر"
+            text="/charge الرجاء الضغط على أمر"
         )
-    elif text == "👤 حسابي":
+        return
+    elif text == "حسابي 👤":
         await show_profile(update, context)
         return
-
     # باقي النصوص تُترك لمحادثات أخرى (مثل order/deposit)
 
 
@@ -108,20 +167,24 @@ reply_keyboard_message_handler = MessageHandler(
     reply_keyboard_handler
 )
 
-
 # ========== أمر /start ==========
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     welcome_text = (
-        f"أهلاً وسهلاً {user.first_name}! 👋\n\n"
-        f"متجر الشحن الإلكتروني - الرجاء اختيار القسم:"
+        f"🌟 أهلاً وسهلاً {user.first_name}! 🌟\n\n"
+        f"🎮 متجر **Mahmod store** للشحن وخدمات التواصل الاجتماعي\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"🛒 للشراء اختر *الألعاب* أو *الرشق* من الأسفل\n"
+        f"💳 للشحن اضغط *شحن الرصيد*\n"
+        f"👤 لمعرفة رصيدك وحسابك اضغط *حسابي*\n\n"
+        f"📩 للدعم الفني: @MyGameSupport"
     )
     await update.message.reply_text(
         welcome_text,
+        parse_mode="Markdown",
         reply_markup=main_reply_keyboard()
     )
-
 
 start_handler = CommandHandler("start", start_command)
 
