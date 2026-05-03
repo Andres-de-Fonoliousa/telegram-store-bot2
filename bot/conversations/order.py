@@ -921,7 +921,7 @@ async def confirm_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"🛒 المنتج: {escape_markdown(context.user_data['product_name'])}\n"
                 f"💵 تم خصم: {total_price} ل.س\n\n"
                 f"👨‍💻 سيقوم فريقنا بمراجعة طلبك والتواصل معك قريباً.\n"
-                f"📩 للاستفسار: @MyGameSupport"
+                f"📩 للاستفسار: @MAHMOUD1shop"
             )
 
         await query.edit_message_text(final_text, parse_mode="Markdown")

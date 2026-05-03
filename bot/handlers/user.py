@@ -178,7 +178,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🛒 للشراء اختر *الألعاب* أو *الرشق* من الأسفل\n"
         f"💳 للشحن اضغط *شحن الرصيد*\n"
         f"👤 لمعرفة رصيدك وحسابك اضغط *حسابي*\n\n"
-        f"📩 للدعم الفني: @MyGameSupport"
+        f"📩 للدعم الفني: @MAHMOUD1shop"
     )
     await update.message.reply_text(
         welcome_text,
