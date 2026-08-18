@@ -7,28 +7,39 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(PROJECT_ROOT)
 sys.path.insert(0, PROJECT_ROOT)
 
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, abort
 from functools import wraps
 from sqlalchemy import func
 import random
+import secrets
+import hashlib
+import hmac
 import requests
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 
-from core.database import engine, Base, SessionLocal
+from core.database import engine, Base, SessionLocal, run_migrations
 import core.models
 Base.metadata.create_all(bind=engine)
+run_migrations()
 
 from core.bot_state import is_bot_active, set_bot_active
 from core.models import Product, ProductsPrice, Order, DepositOrder, User, ExchangeRate
 from config import settings
 
 app = Flask(__name__, template_folder="templates")
-app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'your_secret_key')
+app.secret_key = os.environ.get('FLASK_SECRET_KEY') or secrets.token_hex(32)
+# ملاحظة: إن لم يتم ضبط FLASK_SECRET_KEY سيُولّد مفتاح عشوائي عند كل إقلاع
+# (الجلسات تُعاد تصفيرها عند إعادة التشغيل — آمن لكن غير دائم).
+# الأفضل دائماً ضبط FLASK_SECRET_KEY في .env.
 
 ADMIN_IDS = [str(i) for i in settings.ADMIN_IDS]
 BOT_TOKEN = settings.BOT_TOKEN
 CODE_EXPIRY_MINUTES = 5
+MAX_CODE_ATTEMPTS = 5
+
+def _code_hash(code: str) -> str:
+    return hashlib.sha256(code.encode()).hexdigest()
 
 @contextmanager
 def get_db():
@@ -51,6 +62,21 @@ def paginate(query, page, per_page=20):
         'has_prev': page > 1,
         'has_next': page < total_pages
     }
+
+# ─── حماية CSRF ──────────────────────────────────────────────────────────────
+@app.context_processor
+def inject_csrf_token():
+    if 'csrf_token' not in session:
+        session['csrf_token'] = secrets.token_hex(32)
+    return {'csrf_token': session['csrf_token']}
+
+@app.before_request
+def csrf_protect():
+    if request.method == 'POST':
+        token = session.get('csrf_token')
+        form_token = request.form.get('csrf_token')
+        if not token or not form_token or not hmac.compare_digest(token, form_token):
+            abort(403)
 
 def notify_user_deposit_approved(user_telegram_id, amount):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
@@ -142,8 +168,8 @@ def login():
     step = session.get('login_step', 1)
     code_time = session.get('code_timestamp')
     if code_time and datetime.fromisoformat(code_time) + timedelta(minutes=CODE_EXPIRY_MINUTES) < datetime.utcnow():
-        session.pop('login_code', None)
-        session.pop('code_timestamp', None)
+        for key in ['login_code_hash', 'code_timestamp']:
+            session.pop(key, None)
         session['login_step'] = 1
         step = 1
         error = 'انتهت صلاحية الرمز، يرجى طلب رمز جديد.'
@@ -154,26 +180,41 @@ def login():
             if admin_id in ADMIN_IDS:
                 code = str(random.randint(100000, 999999))
                 session['pending_admin_id'] = admin_id
-                session['login_code'] = code
+                session['login_code_hash'] = _code_hash(code)
                 session['code_timestamp'] = datetime.utcnow().isoformat()
+                session['login_attempts'] = 0
                 session['login_step'] = 2
                 send_telegram_code(admin_id, code)
                 return render_template('login.html', step=2, error=None)
             else:
                 error = 'رقم حساب تيليجرام غير مصرح.'
         elif step == 2:
-            code_entered = request.form.get('code')
-            if code_entered == session.get('login_code'):
+            code_entered = request.form.get('code', '').strip()
+            attempts = session.get('login_attempts', 0)
+            stored_hash = session.get('login_code_hash')
+            if not stored_hash:
+                error = 'لا يوجد رمز فعال. يرجى طلب رمز جديد.'
+                session['login_step'] = 1
+                return render_template('login.html', step=1, error=error)
+            if hmac.compare_digest(_code_hash(code_entered), stored_hash):
                 session['admin_id'] = session['pending_admin_id']
-                for key in ['login_code', 'pending_admin_id', 'login_step', 'code_timestamp']:
+                for key in ['login_code_hash', 'pending_admin_id', 'login_step', 'code_timestamp', 'login_attempts']:
                     session.pop(key, None)
                 return redirect(url_for('manage_prices'))
             else:
-                error = 'رمز التحقق غير صحيح.'
+                attempts += 1
+                session['login_attempts'] = attempts
+                if attempts >= MAX_CODE_ATTEMPTS:
+                    for key in ['login_code_hash', 'code_timestamp', 'login_attempts']:
+                        session.pop(key, None)
+                    session['login_step'] = 1
+                    error = f'تجاوزت الحد المسموح ({MAX_CODE_ATTEMPTS} محاولات). يرجى طلب رمز جديد.'
+                    return render_template('login.html', step=1, error=error)
+                error = f'رمز التحقق غير صحيح. (المحاولة {attempts}/{MAX_CODE_ATTEMPTS})'
                 return render_template('login.html', step=2, error=error)
     else:
         session['login_step'] = 1
-        for key in ['pending_admin_id', 'login_code', 'code_timestamp']:
+        for key in ['pending_admin_id', 'login_code_hash', 'code_timestamp', 'login_attempts']:
             session.pop(key, None)
     return render_template('login.html', step=step, error=error)
 
@@ -320,9 +361,28 @@ def update_order_status(order_id):
     with get_db() as db:
         order = db.query(Order).filter_by(id=order_id).first()
         if order:
+            refunded_amount = 0
+            if new_status == 'cancelled' and order.status != 'cancelled' and not order.refunded:
+                user = db.query(User).filter_by(id=order.user_id).first()
+                if user:
+                    user.balance = (user.balance or 0) + (order.total_price_syp or 0)
+                    order.refunded = True
+                    refunded_amount = order.total_price_syp
+                    try:
+                        requests.post(
+                            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+                            data={
+                                "chat_id": user.telegram_id,
+                                "text": f"❌ تم إلغاء طلبك #{order.id}.\n💸 تم إرجاع {refunded_amount} ل.س إلى رصيدك."
+                            },
+                            timeout=5
+                        )
+                    except Exception as e:
+                        print(f"Failed to notify user about refund: {e}")
             order.status = new_status
             db.commit()
-            flash(f'تم تحديث حالة الطلب #{order_id} إلى {new_status}', 'success')
+            flash(f'تم تحديث حالة الطلب #{order_id} إلى {new_status}'
+                  + (f' وتم إرجاع {refunded_amount} ل.س للعميل' if refunded_amount else ''), 'success')
         else:
             flash('الطلب غير موجود', 'error')
     return redirect(url_for('manage_orders'))
@@ -349,9 +409,9 @@ def manage_deposits():
                 'created_at': dep.created_at
             })
         all_deposits = db.query(DepositOrder).all()
-        pending_count = sum(1 for d in all_deposits if d.status == 'pending')
-        approved_count = sum(1 for d in all_deposits if d.status == 'approved')
-        total_amount = sum(d.amount for d in all_deposits if d.status == 'approved')
+        pending_count = sum(1 for d in all_deposits if d.status in ('pending', 'pending_payment'))
+        approved_count = sum(1 for d in all_deposits if d.status in ('approved', 'completed'))
+        total_amount = sum(d.amount for d in all_deposits if d.status in ('approved', 'completed'))
         return render_template('deposits.html', deposits=deposit_list, pagination=pagination,
                                pending_count=pending_count, approved_count=approved_count,
                                total_amount=total_amount, active_page='deposits')
@@ -366,13 +426,14 @@ def update_deposit_status(deposit_id):
             flash('طلب الشحن غير موجود', 'error')
             return redirect(url_for('manage_deposits'))
         old_status = deposit.status
-        deposit.status = new_status
-        if new_status == 'approved' and old_status != 'approved':
+        if new_status == 'approved' and not deposit.balance_credited:
             user = db.query(User).filter_by(id=deposit.user_id).first()
             if user:
                 user.balance = (user.balance or 0) + deposit.amount
+                deposit.balance_credited = True
                 notify_user_deposit_approved(user.telegram_id, deposit.amount)
                 flash(f'تمت إضافة {deposit.amount} ل.س إلى رصيد المستخدم', 'success')
+        deposit.status = new_status
         if new_status == 'approved' and 'admin_id' in DepositOrder.__table__.columns:
             deposit.admin_id = session.get('admin_id')
         db.commit()
@@ -394,4 +455,8 @@ def manage_exchange_rate():
         return render_template('exchange-rate.html', current_rate=current_rate)
 
 if __name__ == '__main__':
-    app.run(debug=False,host='0.0.0.0',port=5000)
+    app.run(
+        debug=False,
+        host=os.getenv('ADMIN_HOST', '127.0.0.1'),
+        port=int(os.getenv('ADMIN_PORT', '5000'))
+    )

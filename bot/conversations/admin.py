@@ -87,6 +87,13 @@ async def show_weekly_profit(update: Update, context: ContextTypes.DEFAULT_TYPE)
         total_cost = 0
         for order in orders:
             total_revenue += order.total_price_syp
+            qty = order.quantity or 1
+            unit_record = db.query(ProductsPrice).filter_by(
+                product_id=order.product_id, option_value='unit'
+            ).first()
+            if unit_record and unit_record.provider_cost:
+                total_cost += unit_record.provider_cost * qty
+                continue
             answers = json.loads(order.field_answers) if order.field_answers else {}
             option_val = answers.get("uc_amount") or answers.get("diamond_amount") or answers.get(
                 "amount") or answers.get("quantity") or answers.get("membership_type")
@@ -96,7 +103,7 @@ async def show_weekly_profit(update: Update, context: ContextTypes.DEFAULT_TYPE)
                     product_id=order.product_id, option_value=option_val
                 ).first()
                 if price_record and price_record.provider_cost:
-                    total_cost += price_record.provider_cost * order.quantity
+                    total_cost += price_record.provider_cost * qty
 
         profit = total_revenue - total_cost
         summary = (
@@ -298,7 +305,7 @@ async def admin_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
             return await show_orders_list(query, orders, "جميع الطلبات", db)
 
         elif data == "admin_deposits_pending":
-            deposits = db.query(DepositOrder).filter(DepositOrder.status == "pending_payment").order_by(DepositOrder.id.desc()).limit(10).all()
+            deposits = db.query(DepositOrder).filter(DepositOrder.status.in_(["pending", "pending_payment"])).order_by(DepositOrder.id.desc()).limit(10).all()
             return await show_deposits_list(query, deposits, "طلبات الشحن المعلقة", db)
 
         elif data == "admin_deposits_all":
@@ -393,6 +400,13 @@ async def receive_profit_end_date(update: Update, context: ContextTypes.DEFAULT_
             total_cost = 0
             for order in orders:
                 total_revenue += order.total_price_syp
+                qty = order.quantity or 1
+                unit_record = db.query(ProductsPrice).filter_by(
+                    product_id=order.product_id, option_value='unit'
+                ).first()
+                if unit_record and unit_record.provider_cost:
+                    total_cost += unit_record.provider_cost * qty
+                    continue
                 answers = json.loads(order.field_answers) if order.field_answers else {}
                 option_val = answers.get("uc_amount") or answers.get("diamond_amount") or answers.get("amount") or answers.get("quantity") or answers.get("membership_type")
                 option_val = str(option_val) if option_val else None
@@ -401,7 +415,7 @@ async def receive_profit_end_date(update: Update, context: ContextTypes.DEFAULT_
                         product_id=order.product_id, option_value=option_val
                     ).first()
                     if price_record and price_record.provider_cost:
-                        total_cost += price_record.provider_cost * order.quantity
+                        total_cost += price_record.provider_cost * qty
 
             profit = total_revenue - total_cost
             summary = (
@@ -595,7 +609,7 @@ async def view_deposit_detail(update: Update, context: ContextTypes.DEFAULT_TYPE
                 logger.warning(f"Could not send deposit screenshot: {e}")
 
         buttons = []
-        if deposit.status == "pending_payment":
+        if deposit.status in ["pending", "pending_payment"]:
             buttons.append([InlineKeyboardButton("✅ قبول الشحن", callback_data="admin_deposit_approve")])
             buttons.append([InlineKeyboardButton("❌ رفض الشحن", callback_data="admin_deposit_reject")])
         buttons.append([InlineKeyboardButton("🔙 رجوع للشحنات", callback_data="admin_back_to_deposits")])
@@ -638,10 +652,27 @@ async def order_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return MAIN_MENU
 
         elif action == "admin_order_cancel":
+            refunded_amount = 0
+            if order.status != "cancelled" and not order.refunded and user:
+                user.balance += order.total_price_syp
+                order.refunded = True
+                refunded_amount = order.total_price_syp
             order.status = "cancelled"
             db.commit()
-            await send_notification(context.bot, user.telegram_id, f"❌ تم إلغاء طلبك #{order.id}.")
-            await query.edit_message_text(f"❌ تم إلغاء الطلب #{order.id}.", reply_markup=back_to_menu_button())
+            if user:
+                if refunded_amount:
+                    await send_notification(
+                        context.bot, user.telegram_id,
+                        f"❌ تم إلغاء طلبك #{order.id}.\n"
+                        f"💸 تم إرجاع {refunded_amount} ل.س إلى رصيدك."
+                    )
+                else:
+                    await send_notification(context.bot, user.telegram_id, f"❌ تم إلغاء طلبك #{order.id}.")
+            await query.edit_message_text(
+                f"❌ تم إلغاء الطلب #{order.id}."
+                + (f" وتم إرجاع {refunded_amount} ل.س للعميل." if refunded_amount else ""),
+                reply_markup=back_to_menu_button()
+            )
             return MAIN_MENU
 
         elif action == "admin_order_add_code":
@@ -680,9 +711,10 @@ async def deposit_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = db.query(User).filter_by(id=deposit.user_id).first()
 
         if action == "admin_deposit_approve":
-            if deposit.status == "pending_payment":
-                deposit.status = "completed"
+            if deposit.status in ["pending", "pending_payment"] and not deposit.balance_credited:
+                deposit.status = "approved"
                 user.balance += deposit.amount
+                deposit.balance_credited = True
                 deposit.admin_id = query.from_user.id
                 db.commit()
                 await send_notification(

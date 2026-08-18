@@ -24,7 +24,7 @@ class MHDStoreAPI:
         if not endpoint.startswith("/"):
             endpoint = "/" + endpoint
         url = f"{self.base_url}{endpoint}"
-        print(f"DEBUG REQUEST: URL={url}, params={params}, headers={self.headers}")
+        logger.debug("MHD request: URL=%s params=%s", url, params)
         try:
             if method.upper() == "GET":
                 response = requests.get(url, headers=self.headers, params=params, timeout=15)
@@ -90,7 +90,6 @@ class MHDStoreAPI:
             # ضمان عدم استبدال order_uuid عن طريق الخطأ
             params["order_uuid"] = idempotency_key
         result = self._request("GET", endpoint, params=params)
-        print(result)
         data = result.get("data", {})
         order_id = data.get("order_id")
         if not order_id:

@@ -72,6 +72,7 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                         <form method="post" action="{{ url_for('update_order_status', order_id=order.id) }}" class="flex items-center space-x-2 space-x-reverse">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                             <select name="status" class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                                 <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>قيد الانتظار</option>
                                 <option value="processing" {% if order.status == 'processing' %}selected{% endif %}>قيد التنفيذ</option>

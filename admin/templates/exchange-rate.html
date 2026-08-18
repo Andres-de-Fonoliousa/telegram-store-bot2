@@ -115,6 +115,7 @@
         {% endif %}
 
         <form method="post" class="max-w-md">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <div class="mb-4">
                 <label for="rate" class="block text-sm font-medium text-gray-700 mb-2">سعر الصرف الجديد (ليرة سورية لكل دولار)</label>
                 <div class="exchange-input-group">

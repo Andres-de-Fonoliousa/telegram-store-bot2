@@ -58,6 +58,7 @@ class Order(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     external_order_uuid = Column(String(100), nullable=True)   # order_uuid من MHD
     auto_purchase_attempted = Column(Boolean, default=False)   # هل حاولنا الشراء الآلي
+    refunded = Column(Boolean, default=False)                  # تم إرجاع الرصيد للعميل
 
 # Table for storing product prices for each option/quantity
 
@@ -83,9 +84,10 @@ class DepositOrder(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     amount = Column(Integer, nullable=False)  # Amount to deposit (SYP)
     screenshot_path = Column(String, nullable=True)  # Path or Telegram file_id
-    status = Column(String, default="pending_payment")  # pending_payment, completed, rejected
+    status = Column(String, default="pending")  # pending, approved, rejected
     admin_id = Column(Integer, nullable=True)  # Admin who approved
     admin_note = Column(Text, nullable=True)
+    balance_credited = Column(Boolean, default=False)  # هل أضيف المبلغ للرصيد فعلاً (منع الإضافة المزدوجة)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

@@ -9,7 +9,6 @@ from core.database import SessionLocal
 from core.models import User, DepositOrder
 from config import settings
 from bot.handlers.navigation import exit_to_main_menu, exit_to_profile, exit_to_categories
-from bot.handlers.navigation import exit_to_main_menu, exit_to_profile, exit_to_categories
 from bot.handlers.user import show_games_category, show_social_category, show_profile
 
 logger = logging.getLogger(__name__)
@@ -28,7 +27,6 @@ SHAM_CASH_IMAGE_ID = "ضع_هنا_معرف_الصورة_من_تيليجرام"
 
 # --- معالجات مشتركة لأزرار الرد ---
 # --- معالجات أزرار الرد (تذهب مباشرة للقسم المطلوب) ---
-from bot.handlers.user import show_games_category, show_social_category, show_profile
 async def start_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "💰 *شحن الرصيد*\n"
@@ -202,7 +200,7 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
             parse_mode="Markdown"
         )
         return CHOOSE_METHOD
-        """معالجة تأكيد الإيداع وحفظه في قاعدة البيانات."""
+
     query = update.callback_query
     await query.answer()
     if query.data == "cancel_deposit":
@@ -228,7 +226,7 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
             user_id=user.id,
             amount=context.user_data["deposit_amount"],
             screenshot_path=context.user_data["screenshot_file_id"],
-            status="pending_payment"
+            status="pending"
         )
         db.add(deposit)
         db.commit()
@@ -280,7 +278,12 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 
 async def cancel_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("❌ تم إلغاء عملية الشحن.")
+    """إلغاء عملية الشحن — يعمل مع أزرار inline ومع الأمر /cancel."""
+    if update.callback_query:
+        await update.callback_query.answer()
+        await update.callback_query.edit_message_text("❌ تم إلغاء عملية الشحن.")
+    else:
+        await update.message.reply_text("❌ تم إلغاء عملية الشحن.")
     return ConversationHandler.END
 
 
@@ -300,7 +303,7 @@ def deposit_conversation_handler():
                 MessageHandler(filters.PHOTO, receive_transaction),
             ],
             CONFIRM_DEPOSIT: menu_handlers + [  # <-- أضفنا menu_handlers هنا
-                CallbackQueryHandler(handle_confirmation, pattern="^(confirm_deposit|cancel_deposit)$"),
+                CallbackQueryHandler(handle_confirmation, pattern="^(confirm_deposit|cancel_deposit|confirm_back)$"),
             ],
         },
         fallbacks=[

@@ -72,6 +72,7 @@
         <h2>تسجيل الدخول للإدارة</h2>
         {% if error %}<div class="error">{{ error }}</div>{% endif %}
         <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             {% if step == 2 %}
                 <div style="margin-bottom:1em;">تم إرسال رمز تحقق إلى حسابك في تيليجرام. يرجى إدخال الرمز:</div>
                 <input type="text" name="code" placeholder="رمز التحقق" required autofocus>

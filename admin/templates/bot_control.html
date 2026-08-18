@@ -117,6 +117,7 @@
         <!-- Control Buttons -->
         <div class="flex flex-col sm:flex-row gap-4">
             <form method="post" class="inline w-full sm:w-auto">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <input type="hidden" name="action" value="start">
                 <button type="submit" {% if bot_active %}disabled{% endif %}
                         class="bot-btn bot-btn-start">
@@ -124,6 +125,7 @@
                 </button>
             </form>
             <form method="post" class="inline w-full sm:w-auto">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <input type="hidden" name="action" value="stop">
                 <button type="submit" {% if not bot_active %}disabled{% endif %}
                         class="bot-btn bot-btn-stop">

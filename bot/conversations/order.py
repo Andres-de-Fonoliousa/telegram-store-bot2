@@ -4,7 +4,6 @@ import uuid
 import re
 import json
 import logging
-import asyncio
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -402,13 +401,25 @@ async def poll_order_status(context: CallbackContext):
                 )
             else:
                 order.status = "auto_timeout"
+                user_refund = db.query(User).filter_by(id=order.user_id).first()
+                if user_refund and not order.refunded:
+                    user_refund.balance += order.total_price_syp
+                    order.refunded = True
                 db.commit()
+                if user_refund:
+                    await send_notification(
+                        context.bot, user_refund.telegram_id,
+                        f"⏰ انتهت مهلة استطلاع طلبك #{order.id}.\n"
+                        f"تم إرجاع {order.total_price_syp} ل.س إلى رصيدك.\n"
+                        f"سيتم التواصل معك من قبل الدعم لمعالجة الطلب."
+                    )
                 await notify_admins(
                     context.bot,
                     f"⏰ *انتهت مهلة الاستطلاع*\n"
                     f"━━━━━━━━━━━━━━━━━━\n"
                     f"🆔 الطلب: #{order.id}\n"
                     f"🔑 MHD UUID: {order.external_order_uuid}\n"
+                    f"💸 تم إرجاع المبلغ للعميل تلقائياً.\n"
                     f"🛑 يتطلب تدخلاً يدوياً."
                 )
             return
@@ -422,13 +433,6 @@ async def poll_order_status(context: CallbackContext):
             db.commit()
 
             escaped_delivered = escape_markdown(delivered)
-            await send_notification(
-                context.bot, user.telegram_id,
-                f"🎉 تم إتمام طلبك #{order.id} بنجاح!\n\n"
-                f"🔑 البيانات: `{escaped_delivered}`\n\n"
-                f"شكراً لاستخدامك خدماتنا.",
-                parse_mode="Markdown"
-            )
             await send_notification(
                 context.bot, user.telegram_id,
                 f"🎊 *اكتمل طلبك بنجاح*\n"
@@ -473,10 +477,20 @@ async def poll_order_status(context: CallbackContext):
                 )
             else:
                 order.status = "auto_timeout"
+                if user and not order.refunded:
+                    user.balance += order.total_price_syp
+                    order.refunded = True
                 db.commit()
+                await send_notification(
+                    context.bot, user.telegram_id,
+                    f"⏰ انتهت مهلة استطلاع طلبك #{order.id}.\n"
+                    f"تم إرجاع {order.total_price_syp} ل.س إلى رصيدك.\n"
+                    f"سيتم التواصل معك من قبل الدعم لمعالجة الطلب."
+                )
                 await notify_admins(
                     context.bot,
-                    f"⏰ انتهت مهلة استطلاع الطلب #{order.id} - يحتاج تدخل يدوي."
+                    f"⏰ انتهت مهلة استطلاع الطلب #{order.id} - يحتاج تدخل يدوي.\n"
+                    f"💸 تم إرجاع المبلغ للعميل تلقائياً."
                 )
 
     except Exception as e:
@@ -876,9 +890,15 @@ async def confirm_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
         product_id = context.user_data["product_id"]
         product = db.query(Product).filter_by(id=product_id).first()
 
+        quantity = 1
+        qty_answer = context.user_data["answers"].get("quantity")
+        if qty_answer is not None and str(qty_answer).lstrip("-").isdigit():
+            quantity = int(qty_answer)
+
         order = Order(
             user_id=user.id,
             product_id=product_id,
+            quantity=quantity,
             total_price_syp=total_price,
             status="pending",
             field_answers=json.dumps(context.user_data["answers"], ensure_ascii=False)
@@ -901,7 +921,7 @@ async def confirm_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # منطق الشراء الآلي
         if (settings.MHD_API_ENABLED and settings.MHD_API_KEY and
                 product and product.is_auto):
-            asyncio.create_task(
+            context.application.create_task(
                 process_auto_purchase(order.id, user.id, context.bot, context)
             )
             final_text = (
@@ -948,23 +968,27 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 from bot.handlers.navigation import exit_to_main_menu, exit_to_profile, exit_to_categories, exit_to_deposit
 def order_conversation_handler():
-    # معالجات أزرار الرد (ستُضاف إلى الحالات)
+    # معالجات أزرار الرد (ستُضاف إلى الحالات) — تطابق الأزرار الفعلية في reply.py
     menu_handlers = [
-        MessageHandler(filters.Regex('^🛒 الأقسام$'), exit_to_categories),
-        MessageHandler(filters.Regex('^💰 شحن الرصيد$'), exit_to_deposit),
-        MessageHandler(filters.Regex('^👤 حسابي$'), exit_to_profile),
+        MessageHandler(filters.Regex('^الألعاب 🎮🔥$'), exit_to_categories),
+        MessageHandler(filters.Regex('^الرَّشق ⚡📱$'), exit_to_categories),
+        MessageHandler(filters.Regex('^شحن الرصيد 💎$'), exit_to_deposit),
+        MessageHandler(filters.Regex('^حسابي 👤$'), exit_to_profile),
     ]
+
+    # إنهاء المحادثة فوراً عند الضغط على زر "الرجوع للقائمة الرئيسية" (inline)
+    back_to_main_handler = CallbackQueryHandler(exit_to_main_menu, pattern="^back_to_main$")
 
     return ConversationHandler(
         entry_points=[CallbackQueryHandler(start_order, pattern="^product_")],
         states={
-            SELECTING_FIELD: menu_handlers + [
+            SELECTING_FIELD: menu_handlers + [back_to_main_handler] + [
                 CallbackQueryHandler(receive_answer, pattern="^(answer_|cancel_order|answer_back)"),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, receive_answer),
                 MessageHandler(filters.PHOTO, receive_answer),
                 MessageHandler(~filters.COMMAND, invalid_input),
             ],
-            CONFIRM_ORDER: menu_handlers + [
+            CONFIRM_ORDER: menu_handlers + [back_to_main_handler] + [
                 CallbackQueryHandler(confirm_order, pattern="^(confirm_order|edit_order|cancel_order|recharge_balance)$"),
             ],
         },
@@ -978,7 +1002,8 @@ def order_conversation_handler():
     )
 
 # -------------------- استرداد مهام الاستطلاع --------------------
-async def recover_polling_jobs(application):
+async def recover_polling_jobs(context: CallbackContext):
+    application = context.application
     db = SessionLocal()
     try:
         processing_orders = db.query(Order).filter(

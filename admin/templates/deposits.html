@@ -207,12 +207,12 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{{ deposit.amount }} ل.س</td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="status-badge
-                            {% if deposit.status == 'pending' %}bg-yellow-100 text-yellow-800
-                            {% elif deposit.status == 'approved' %}bg-green-100 text-green-800
+                            {% if deposit.status == 'pending' or deposit.status == 'pending_payment' %}bg-yellow-100 text-yellow-800
+                            {% elif deposit.status == 'approved' or deposit.status == 'completed' %}bg-green-100 text-green-800
                             {% elif deposit.status == 'rejected' %}bg-red-100 text-red-800
                             {% else %}bg-gray-100 text-gray-800{% endif %}">
-                            {% if deposit.status == 'pending' %}معلق
-                            {% elif deposit.status == 'approved' %}مقبول
+                            {% if deposit.status == 'pending' or deposit.status == 'pending_payment' %}معلق
+                            {% elif deposit.status == 'approved' or deposit.status == 'completed' %}مقبول
                             {% elif deposit.status == 'rejected' %}مرفوض
                             {% else %}{{ deposit.status }}{% endif %}
                         </span>
@@ -232,9 +232,10 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                         <form method="post" action="{{ url_for('update_deposit_status', deposit_id=deposit.id) }}" class="flex items-center space-x-2 space-x-reverse">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                             <select name="status" class="select-status text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                <option value="pending" {% if deposit.status == 'pending' %}selected{% endif %}>معلق</option>
-                                <option value="approved" {% if deposit.status == 'approved' %}selected{% endif %}>مقبول</option>
+                                <option value="pending" {% if deposit.status == 'pending' or deposit.status == 'pending_payment' %}selected{% endif %}>معلق</option>
+                                <option value="approved" {% if deposit.status == 'approved' or deposit.status == 'completed' %}selected{% endif %}>مقبول</option>
                                 <option value="rejected" {% if deposit.status == 'rejected' %}selected{% endif %}>مرفوض</option>
                             </select>
                             <button type="submit" class="update-btn">

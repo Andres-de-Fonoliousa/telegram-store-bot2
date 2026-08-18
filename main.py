@@ -4,16 +4,18 @@ from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
-    CallbackQueryHandler,
     ContextTypes,
     TypeHandler,
     filters,
 )
 from config import settings
+from core.database import run_migrations
 
 # استيراد دوال الخلفية
 from bot.conversations.order import recover_polling_jobs
 from services.price_sync import sync_prices_from_mhd
+
+run_migrations()
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -46,22 +48,9 @@ async def global_bot_check(update: Update, _: ContextTypes.DEFAULT_TYPE):
         raise ApplicationHandlerStop()
 
 # --- معالج أزرار القائمة الرئيسية (لإنهاء المحادثات العالقة) ---
-async def global_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    data = query.data
-
-    # مسح بيانات المستخدم لإنهاء أي محادثة جارية
-    context.user_data.clear()
-
-    from bot.handlers.user import show_categories, show_main_menu
-
-    if data == "categories":
-        await show_categories(update, context)
-    elif data == "main_menu":
-        await show_main_menu(update, context)
-    else:
-        await show_main_menu(update, context)
+# ملاحظة: تم حذف global_menu_handler لأن callback data الفعلية هي
+# "back_to_main" وليست "categories"/"main_menu"؛ إنهاء المحادثات يتم الآن
+# داخل كل ConversationHandler عبر معالج pattern="^back_to_main$".
 
 # --- أوامر المشرف للتحكم بالبوت ---
 async def start_bot_cmd(update: Update, _: ContextTypes.DEFAULT_TYPE):
@@ -141,13 +130,7 @@ def main() -> None:
     # 1. فلتر حالة البوت (أعلى أولوية)
     application.add_handler(TypeHandler(Update, global_bot_check), group=-1)
 
-    # 2. معالج أزرار القائمة (أولوية عادية)
-    application.add_handler(
-        CallbackQueryHandler(global_menu_handler, pattern="^(categories|main_menu)$"),
-        group=0
-    )
-
-    # 3. استيراد جميع الهاندلرز
+    # 2. استيراد جميع الهاندلرز
     from bot.handlers.user import (
         start_handler,
         callback_handler,
@@ -174,18 +157,16 @@ def main() -> None:
     application.add_handler(CommandHandler("setdiscount", set_discount_cmd, filters=admin_filter))
     application.add_handler(CommandHandler("removediscount", remove_discount_cmd, filters=admin_filter))
     # 6. مهام الخلفية (مزامنة الأسعار واسترداد الاستطلاع)
-    if settings.MHD_API_ENABLED:
-        job_queue = application.job_queue
-
-        # مزامنة الأسعار التلقائية
-        if getattr(settings, 'SYNC_ENABLED', False) and job_queue:
+    job_queue = application.job_queue
+    if job_queue:
+        if settings.MHD_API_ENABLED and getattr(settings, 'SYNC_ENABLED', False):
             interval = getattr(settings, 'SYNC_INTERVAL_MINUTES', 60) * 60
             job_queue.run_repeating(sync_prices_from_mhd, interval=interval, first=10)
             logger.info(f"Price sync scheduled every {interval//60} minutes")
 
-        # استرداد مهام استطلاع الطلبات المعلقة
+        # استرداد مهام استطلاع الطلبات المعلقة بعد إعادة التشغيل
         job_queue.run_once(
-            lambda ctx: recover_polling_jobs(application),
+            recover_polling_jobs,
             when=2,
             name="recover_polling_jobs"
         )

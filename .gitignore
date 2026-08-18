@@ -28,3 +28,13 @@ __pycache__/
 # ملفات نظام التشغيل المؤقتة
 .DS_Store
 Thumbs.db
+
+# وسائط محلية (صور المنتجات / لقطات الشحن)
+media/
+admin/static/
+
+# ملفات تجريبية / اختبارية مؤقتة
+try*.py
+current.txt
+expected.txt
+filtered_results.json
